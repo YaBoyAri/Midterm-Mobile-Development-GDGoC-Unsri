@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // Color Palette - Colorful & Playful
@@ -14,7 +15,7 @@ class AppTheme {
 
   static ThemeData get lightTheme => ThemeData(
         useMaterial3: true,
-        fontFamily: 'Poppins',
+        textTheme: GoogleFonts.poppinsTextTheme(),
         colorScheme: ColorScheme.fromSeed(
           seedColor: primary,
           primary: primary,

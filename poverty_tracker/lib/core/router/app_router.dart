@@ -6,6 +6,8 @@ import '../../presentation/auth/login_screen.dart';
 import '../../presentation/auth/register_screen.dart';
 import '../../presentation/home/home_screen.dart';
 import '../../presentation/transaction/add_transaction_screen.dart';
+import '../../presentation/transaction/edit_transaction_screen.dart';
+import '../../data/models/transaction_model.dart';
 import '../../presentation/budget/budget_screen.dart';
 import '../../presentation/report/report_screen.dart';
 import '../../presentation/bill/bill_screen.dart';
@@ -38,6 +40,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/add-transaction',
         builder: (c, s) => const AddTransactionScreen(),
+      ),
+      GoRoute(
+        path: '/edit-transaction',
+        builder: (c, s) => EditTransactionScreen(
+          transaction: s.extra as TransactionModel,
+        ),
       ),
     ],
   );

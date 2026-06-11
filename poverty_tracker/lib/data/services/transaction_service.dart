@@ -24,6 +24,13 @@ class TransactionService {
     await _client.from('transactions').delete().eq('id', id);
   }
 
+  Future<void> updateTransaction(TransactionModel transaction) async {
+    await _client
+        .from('transactions')
+        .update(transaction.toJson())
+        .eq('id', transaction.id);
+  }
+
   Future<Map<String, double>> getSummary() async {
     final data = await _client
         .from('transactions')

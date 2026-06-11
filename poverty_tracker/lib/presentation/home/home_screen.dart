@@ -185,13 +185,36 @@ class HomeScreen extends ConsumerWidget {
                               _TransactionItem(
                             transaction: transactions[index],
                             formatter: formatter,
+                            onTap: () async {
+                              final result = await context.push<bool>(
+                                '/edit-transaction',
+                                extra: transactions[index],
+                              );
+                              if (result == true) {
+                                ref.invalidate(transactionsProvider);
+                                ref.invalidate(summaryProvider);
+                              }
+                            },
                             onDelete: () async {
-                              await ref
-                                  .read(transactionServiceProvider)
-                                  .deleteTransaction(
-                                      transactions[index].id);
-                              ref.invalidate(transactionsProvider);
-                              ref.invalidate(summaryProvider);
+                              try {
+                                await ref
+                                    .read(transactionServiceProvider)
+                                    .deleteTransaction(
+                                        transactions[index].id);
+                                ref.invalidate(transactionsProvider);
+                                ref.invalidate(summaryProvider);
+                                return true;
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Gagal menghapus: $e'),
+                                      backgroundColor: AppTheme.expense,
+                                    ),
+                                  );
+                                }
+                                return false;
+                              }
                             },
                           ),
                         ),
@@ -266,11 +289,13 @@ class _SummaryItem extends StatelessWidget {
 class _TransactionItem extends StatelessWidget {
   final TransactionModel transaction;
   final NumberFormat formatter;
-  final VoidCallback onDelete;
+  final VoidCallback onTap;
+  final Future<bool> Function() onDelete;
 
   const _TransactionItem({
     required this.transaction,
     required this.formatter,
+    required this.onTap,
     required this.onDelete,
   });
 
@@ -310,69 +335,95 @@ class _TransactionItem extends StatelessWidget {
         ),
         child: const Icon(Icons.delete_rounded, color: Colors.white),
       ),
-      onDismissed: (_) => onDelete(),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: isIncome
-                    ? AppTheme.income.withOpacity(0.1)
-                    : AppTheme.expense.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
+      confirmDismiss: (_) async {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Hapus Transaksi'),
+            content: const Text('Yakin ingin menghapus transaksi ini?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Batal'),
               ),
-              child: Icon(
-                _getCategoryIcon(transaction.category),
-                color: isIncome ? AppTheme.income : AppTheme.expense,
-                size: 20,
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: TextButton.styleFrom(foregroundColor: AppTheme.expense),
+                child: const Text('Hapus'),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    transaction.category,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                  if (transaction.note != null &&
-                      transaction.note!.isNotEmpty)
+            ],
+          ),
+        );
+        if (confirmed == true) {
+          return await onDelete();
+        }
+        return false;
+      },
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: isIncome
+                      ? AppTheme.income.withOpacity(0.1)
+                      : AppTheme.expense.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  _getCategoryIcon(transaction.category),
+                  color: isIncome ? AppTheme.income : AppTheme.expense,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      transaction.note!,
+                      transaction.category,
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    if (transaction.note != null &&
+                        transaction.note!.isNotEmpty)
+                      Text(
+                        transaction.note!,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    Text(
+                      DateFormat('dd MMM yyyy').format(transaction.date),
+                      style: const TextStyle(
+                        fontSize: 11,
                         color: AppTheme.textSecondary,
                       ),
                     ),
-                  Text(
-                    DateFormat('dd MMM yyyy').format(transaction.date),
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Text(
-              '${isIncome ? '+' : '-'} ${formatter.format(transaction.amount)}',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                color: isIncome ? AppTheme.income : AppTheme.expense,
-                fontSize: 14,
+              Text(
+                '${isIncome ? '+' : '-'} ${formatter.format(transaction.amount)}',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: isIncome ? AppTheme.income : AppTheme.expense,
+                  fontSize: 14,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

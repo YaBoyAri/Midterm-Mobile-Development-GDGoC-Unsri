@@ -69,11 +69,45 @@ class BudgetScreen extends ConsumerWidget {
                           child: const Icon(Icons.delete_rounded,
                               color: Colors.white),
                         ),
-                        onDismissed: (_) async {
-                          await ref
-                              .read(budgetServiceProvider)
-                              .deleteBudget(budget.id);
-                          ref.invalidate(budgetsProvider);
+                        confirmDismiss: (_) async {
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Hapus Budget'),
+                              content: const Text('Yakin ingin menghapus budget ini?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, false),
+                                  child: const Text('Batal'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  style: TextButton.styleFrom(foregroundColor: AppTheme.expense),
+                                  child: const Text('Hapus'),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (confirmed == true) {
+                            try {
+                              await ref
+                                  .read(budgetServiceProvider)
+                                  .deleteBudget(budget.id);
+                              ref.invalidate(budgetsProvider);
+                              return true;
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Gagal menghapus: $e'),
+                                    backgroundColor: AppTheme.expense,
+                                  ),
+                                );
+                              }
+                              return false;
+                            }
+                          }
+                          return false;
                         },
                         child: Container(
                           padding: const EdgeInsets.all(16),
@@ -216,13 +250,36 @@ class BudgetScreen extends ConsumerWidget {
                 child: ElevatedButton(
                   onPressed: () async {
                     if (amountController.text.isEmpty) return;
+
+                    final currentMonth = DateFormat('yyyy-MM').format(DateTime.now());
+
+                    // Cek duplikat budget untuk kategori & bulan yang sama
+                    final existingBudgets = await ref
+                        .read(budgetServiceProvider)
+                        .getBudgets(currentMonth);
+                    final isDuplicate = existingBudgets
+                        .any((b) => b.category == selectedCategory);
+
+                    if (isDuplicate) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                'Budget untuk kategori "$selectedCategory" bulan ini sudah ada!'),
+                            backgroundColor: AppTheme.warning,
+                          ),
+                        );
+                      }
+                      return;
+                    }
+
                     final budget = BudgetModel(
                       id: '',
                       userId:
                           Supabase.instance.client.auth.currentUser!.id,
                       category: selectedCategory,
                       limitAmount: double.parse(amountController.text),
-                      month: DateFormat('yyyy-MM').format(DateTime.now()),
+                      month: currentMonth,
                     );
                     await ref
                         .read(budgetServiceProvider)

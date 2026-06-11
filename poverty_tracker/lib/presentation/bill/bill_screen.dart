@@ -256,7 +256,43 @@ class _BillItem extends StatelessWidget {
         ),
         child: const Icon(Icons.delete_rounded, color: Colors.white),
       ),
-      onDismissed: (_) => onDelete(),
+      confirmDismiss: (_) async {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Hapus Tagihan'),
+            content: const Text('Yakin ingin menghapus tagihan ini?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Batal'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: TextButton.styleFrom(foregroundColor: AppTheme.expense),
+                child: const Text('Hapus'),
+              ),
+            ],
+          ),
+        );
+        if (confirmed == true) {
+          try {
+            onDelete();
+            return true;
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Gagal menghapus: $e'),
+                  backgroundColor: AppTheme.expense,
+                ),
+              );
+            }
+            return false;
+          }
+        }
+        return false;
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(16),
