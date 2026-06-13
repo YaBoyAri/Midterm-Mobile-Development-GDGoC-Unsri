@@ -11,6 +11,7 @@ import '../../data/models/transaction_model.dart';
 import '../../presentation/budget/budget_screen.dart';
 import '../../presentation/report/report_screen.dart';
 import '../../presentation/bill/bill_screen.dart';
+import '../../presentation/settings/settings_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -36,6 +37,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ],
       ),
       GoRoute(path: '/login', builder: (c, s) => const LoginScreen()),
+      GoRoute(path: '/settings', builder: (c, s) => const SettingsScreen()),
       GoRoute(path: '/register', builder: (c, s) => const RegisterScreen()),
       GoRoute(
         path: '/add-transaction',

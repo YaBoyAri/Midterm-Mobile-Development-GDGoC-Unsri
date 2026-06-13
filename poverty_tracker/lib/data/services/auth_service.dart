@@ -6,10 +6,12 @@ class AuthService {
   Future<AuthResponse> signUp({
     required String email,
     required String password,
+    String? displayName,
   }) async {
     return await _client.auth.signUp(
       email: email,
       password: password,
+      data: displayName != null ? {'display_name': displayName} : null,
     );
   }
 
@@ -25,6 +27,20 @@ class AuthService {
 
   Future<void> signOut() async {
     await _client.auth.signOut();
+  }
+
+  Future<void> updateDisplayName(String displayName) async {
+    await _client.auth.updateUser(
+      UserAttributes(
+        data: {'display_name': displayName},
+      ),
+    );
+  }
+
+  Future<void> updatePassword(String newPassword) async {
+    await _client.auth.updateUser(
+      UserAttributes(password: newPassword),
+    );
   }
 
   Session? get currentSession => _client.auth.currentSession;

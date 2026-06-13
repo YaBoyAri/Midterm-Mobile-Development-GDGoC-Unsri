@@ -14,6 +14,8 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final summaryAsync = ref.watch(summaryProvider);
     final transactionsAsync = ref.watch(transactionsProvider);
+    // Watch auth state so display name updates when changed in settings
+    ref.watch(authStateProvider);
     final user = ref.read(authServiceProvider).currentUser;
     final formatter = NumberFormat.currency(
       locale: 'id_ID',
@@ -37,33 +39,66 @@ class HomeScreen extends ConsumerWidget {
                 // Header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Halo! 👋',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppTheme.textSecondary,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Halo! 👋',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppTheme.textSecondary,
+                            ),
                           ),
-                        ),
-                        Text(
-                          user?.email?.split('@')[0] ?? 'User',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.textPrimary,
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [AppTheme.primary, Color(0xFF9B8FFF)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    ((user?.userMetadata?['display_name'] as String?)?.isNotEmpty == true
+                                            ? user!.userMetadata!['display_name'] as String
+                                            : user?.email?.split('@')[0] ?? 'U')[0]
+                                        .toUpperCase(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                (user?.userMetadata?['display_name'] as String?)?.isNotEmpty == true
+                                    ? user!.userMetadata!['display_name'] as String
+                                    : user?.email?.split('@')[0] ?? 'User',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.textPrimary,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     IconButton(
-                      onPressed: () async {
-                        await ref.read(authServiceProvider).signOut();
-                        if (context.mounted) context.go('/login');
-                      },
-                      icon: const Icon(Icons.logout_rounded),
+                      onPressed: () => context.push('/settings'),
+                      icon: const Icon(Icons.settings_rounded),
                       style: IconButton.styleFrom(
                         backgroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
