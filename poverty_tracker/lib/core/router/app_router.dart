@@ -1,6 +1,8 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../presentation/auth/login_screen.dart';
 import '../../presentation/auth/register_screen.dart';
@@ -12,6 +14,7 @@ import '../../presentation/budget/budget_screen.dart';
 import '../../presentation/report/report_screen.dart';
 import '../../presentation/bill/bill_screen.dart';
 import '../../presentation/settings/settings_screen.dart';
+import '../theme/app_theme.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -68,9 +71,10 @@ class MainShell extends StatelessWidget {
 
     return Scaffold(
       body: child,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: currentIndex,
-        onDestinationSelected: (index) {
+      extendBody: true,
+      bottomNavigationBar: _FloatingNavBar(
+        currentIndex: currentIndex,
+        onTap: (index) {
           switch (index) {
             case 0:
               context.go('/');
@@ -86,16 +90,113 @@ class MainShell extends StatelessWidget {
               break;
           }
         },
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_rounded), label: 'Home'),
-          NavigationDestination(
-              icon: Icon(Icons.pie_chart_rounded), label: 'Budget'),
-          NavigationDestination(
-              icon: Icon(Icons.bar_chart_rounded), label: 'Report'),
-          NavigationDestination(
-              icon: Icon(Icons.receipt_long_rounded), label: 'Bills'),
-        ],
       ),
     );
   }
+}
+
+class _FloatingNavBar extends StatelessWidget {
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+
+  const _FloatingNavBar({
+    required this.currentIndex,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      _NavItem(icon: Iconsax.home_2, activeIcon: Iconsax.home_25, label: 'Home'),
+      _NavItem(icon: Iconsax.chart, activeIcon: Iconsax.chart_1, label: 'Budget'),
+      _NavItem(icon: Iconsax.graph, activeIcon: Iconsax.graph, label: 'Report'),
+      _NavItem(icon: Iconsax.receipt_text, activeIcon: Iconsax.receipt_text, label: 'Bills'),
+    ];
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            height: 72,
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceVariant.withOpacity(0.85),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: AppTheme.border.withOpacity(0.5),
+                width: 0.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: items.asMap().entries.map((e) {
+                final isActive = e.key == currentIndex;
+                return GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => onTap(e.key),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOutCubic,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? AppTheme.primary.withOpacity(0.15)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isActive ? e.value.activeIcon : e.value.icon,
+                          color: isActive
+                              ? AppTheme.primaryLight
+                              : AppTheme.textSecondary,
+                          size: 22,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          e.value.label,
+                          style: TextStyle(
+                            color: isActive
+                                ? AppTheme.primaryLight
+                                : AppTheme.textSecondary,
+                            fontSize: 11,
+                            fontWeight:
+                                isActive ? FontWeight.w600 : FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+
+  const _NavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+  });
 }

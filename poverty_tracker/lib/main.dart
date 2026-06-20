@@ -28,7 +28,7 @@ class MyApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'FinTrack',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
+      theme: AppTheme.darkTheme,
       routerConfig: router,
     );
   }

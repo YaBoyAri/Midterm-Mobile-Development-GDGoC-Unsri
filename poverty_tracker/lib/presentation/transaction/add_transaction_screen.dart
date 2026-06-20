@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:iconsax/iconsax.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/transaction_model.dart';
 import '../../data/services/transaction_service.dart';
@@ -31,6 +33,13 @@ class _AddTransactionScreenState
     'Makanan', 'Transportasi', 'Belanja', 'Hiburan',
     'Kesehatan', 'Tagihan', 'Lainnya'
   ];
+
+  final _categoryEmojis = {
+    'Makanan': '🍔', 'Transportasi': '🚗', 'Belanja': '🛍️',
+    'Hiburan': '🎮', 'Kesehatan': '🏥', 'Tagihan': '📄',
+    'Gaji': '💼', 'Investasi': '📈', 'Bonus': '🎁',
+    'Freelance': '💻', 'Lainnya': '💰',
+  };
 
   List<String> get _categories =>
       _type == 'income' ? _incomeCategories : _expenseCategories;
@@ -61,7 +70,7 @@ class _AddTransactionScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Transaksi berhasil ditambahkan!'),
+            content: Text('Transaksi berhasil ditambahkan! ✅'),
             backgroundColor: AppTheme.income,
           ),
         );
@@ -92,9 +101,12 @@ class _AddTransactionScreenState
           children: [
             // Type Toggle
             Container(
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                color: AppTheme.surfaceVariant,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                    color: AppTheme.border.withOpacity(0.5), width: 0.5),
               ),
               child: Row(
                 children: [
@@ -104,23 +116,47 @@ class _AddTransactionScreenState
                         _type = 'expense';
                         _category = _expenseCategories[0];
                       }),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(
-                          color: _type == 'expense'
-                              ? AppTheme.expense
-                              : Colors.transparent,
+                          gradient: _type == 'expense'
+                              ? AppTheme.expenseGradient
+                              : null,
                           borderRadius: BorderRadius.circular(12),
+                          boxShadow: _type == 'expense'
+                              ? [
+                                  BoxShadow(
+                                    color: AppTheme.expense
+                                        .withOpacity(0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
                         ),
                         alignment: Alignment.center,
-                        child: Text(
-                          'Pengeluaran',
-                          style: TextStyle(
-                            color: _type == 'expense'
-                                ? Colors.white
-                                : AppTheme.textSecondary,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Iconsax.arrow_up_1,
+                              size: 18,
+                              color: _type == 'expense'
+                                  ? Colors.white
+                                  : AppTheme.textSecondary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Pengeluaran',
+                              style: TextStyle(
+                                color: _type == 'expense'
+                                    ? Colors.white
+                                    : AppTheme.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -131,31 +167,55 @@ class _AddTransactionScreenState
                         _type = 'income';
                         _category = _incomeCategories[0];
                       }),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(
-                          color: _type == 'income'
-                              ? AppTheme.income
-                              : Colors.transparent,
+                          gradient: _type == 'income'
+                              ? AppTheme.incomeGradient
+                              : null,
                           borderRadius: BorderRadius.circular(12),
+                          boxShadow: _type == 'income'
+                              ? [
+                                  BoxShadow(
+                                    color: AppTheme.income
+                                        .withOpacity(0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
                         ),
                         alignment: Alignment.center,
-                        child: Text(
-                          'Pemasukan',
-                          style: TextStyle(
-                            color: _type == 'income'
-                                ? Colors.white
-                                : AppTheme.textSecondary,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Iconsax.arrow_down,
+                              size: 18,
+                              color: _type == 'income'
+                                  ? Colors.white
+                                  : AppTheme.textSecondary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Pemasukan',
+                              style: TextStyle(
+                                color: _type == 'income'
+                                    ? Colors.white
+                                    : AppTheme.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 20),
+            ).animate().fadeIn(duration: 300.ms),
+            const SizedBox(height: 24),
 
             // Amount
             const Text('Nominal',
@@ -166,53 +226,89 @@ class _AddTransactionScreenState
             TextFormField(
               controller: _amountController,
               keyboardType: TextInputType.number,
+              style: const TextStyle(
+                color: AppTheme.textPrimary,
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+              ),
               decoration: const InputDecoration(
                 prefixText: 'Rp ',
                 hintText: '0',
+                prefixStyle: TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
+            ).animate().fadeIn(delay: 100.ms, duration: 300.ms),
+            const SizedBox(height: 20),
 
             // Category
             const Text('Kategori',
                 style: TextStyle(
                     fontWeight: FontWeight.w600,
                     color: AppTheme.textPrimary)),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: _categories
                   .map((cat) => GestureDetector(
                         onTap: () => setState(() => _category = cat),
-                        child: Container(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
+                              horizontal: 14, vertical: 10),
                           decoration: BoxDecoration(
+                            gradient: _category == cat
+                                ? AppTheme.primaryGradient
+                                : null,
                             color: _category == cat
-                                ? AppTheme.primary
-                                : Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: _category == cat
-                                  ? AppTheme.primary
-                                  : const Color(0xFFE8E8F0),
-                            ),
+                                ? null
+                                : AppTheme.surfaceVariant,
+                            borderRadius: BorderRadius.circular(14),
+                            border: _category == cat
+                                ? null
+                                : Border.all(
+                                    color: AppTheme.border.withOpacity(0.5),
+                                    width: 0.5,
+                                  ),
+                            boxShadow: _category == cat
+                                ? [
+                                    BoxShadow(
+                                      color: AppTheme.primary
+                                          .withOpacity(0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ]
+                                : null,
                           ),
-                          child: Text(
-                            cat,
-                            style: TextStyle(
-                              color: _category == cat
-                                  ? Colors.white
-                                  : AppTheme.textSecondary,
-                              fontWeight: FontWeight.w500,
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _categoryEmojis[cat] ?? '💰',
+                                style: const TextStyle(fontSize: 16),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                cat,
+                                style: TextStyle(
+                                  color: _category == cat
+                                      ? Colors.white
+                                      : AppTheme.textSecondary,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ))
                   .toList(),
-            ),
-            const SizedBox(height: 16),
+            ).animate().fadeIn(delay: 200.ms, duration: 300.ms),
+            const SizedBox(height: 20),
 
             // Date
             const Text('Tanggal',
@@ -227,20 +323,33 @@ class _AddTransactionScreenState
                   initialDate: _date,
                   firstDate: DateTime(2020),
                   lastDate: DateTime.now(),
+                  builder: (context, child) {
+                    return Theme(
+                      data: Theme.of(context).copyWith(
+                        colorScheme: const ColorScheme.dark(
+                          primary: AppTheme.primary,
+                          surface: AppTheme.surfaceVariant,
+                          onSurface: AppTheme.textPrimary,
+                        ),
+                      ),
+                      child: child!,
+                    );
+                  },
                 );
                 if (picked != null) setState(() => _date = picked);
               },
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE8E8F0)),
+                  color: AppTheme.surfaceVariant,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                      color: AppTheme.border.withOpacity(0.5), width: 0.5),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.calendar_today_rounded,
-                        color: AppTheme.primary, size: 20),
+                    const Icon(Iconsax.calendar_1,
+                        color: AppTheme.primaryLight, size: 20),
                     const SizedBox(width: 12),
                     Text(
                       DateFormat('dd MMMM yyyy', 'id_ID').format(_date),
@@ -249,8 +358,8 @@ class _AddTransactionScreenState
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
+            ).animate().fadeIn(delay: 300.ms, duration: 300.ms),
+            const SizedBox(height: 20),
 
             // Note
             const Text('Catatan (opsional)',
@@ -261,26 +370,50 @@ class _AddTransactionScreenState
             TextFormField(
               controller: _noteController,
               maxLines: 3,
+              style: const TextStyle(color: AppTheme.textPrimary),
               decoration: const InputDecoration(
                 hintText: 'Tambahkan catatan...',
               ),
-            ),
-            const SizedBox(height: 24),
+            ).animate().fadeIn(delay: 400.ms, duration: 300.ms),
+            const SizedBox(height: 28),
 
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _submit,
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2),
-                      )
-                    : const Text('Simpan Transaksi'),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: AppTheme.primaryGradient,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primary.withOpacity(0.4),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2),
+                        )
+                      : const Text('Simpan Transaksi',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          )),
+                ),
               ),
-            ),
+            ).animate().fadeIn(delay: 500.ms, duration: 400.ms),
           ],
         ),
       ),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:iconsax/iconsax.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/repositories/auth_provider.dart';
 
@@ -38,9 +40,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           bottom: MediaQuery.of(ctx).viewInsets.bottom,
         ),
         child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceVariant,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border.all(
+              color: AppTheme.border.withOpacity(0.5),
+              width: 0.5,
+            ),
           ),
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -52,7 +58,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppTheme.textSecondary.withOpacity(0.3),
+                    color: AppTheme.textMuted.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -78,51 +84,71 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               TextFormField(
                 controller: controller,
                 autofocus: true,
+                style: const TextStyle(color: AppTheme.textPrimary),
                 decoration: const InputDecoration(
                   labelText: 'Username',
-                  prefixIcon: Icon(Icons.person_rounded),
+                  prefixIcon: Icon(Iconsax.user),
                 ),
               ),
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final name = controller.text.trim();
-                    if (name.isEmpty) {
-                      ScaffoldMessenger.of(ctx).showSnackBar(
-                        const SnackBar(content: Text('Username tidak boleh kosong')),
-                      );
-                      return;
-                    }
-                    try {
-                      await ref.read(authServiceProvider).updateDisplayName(name);
-                      if (ctx.mounted) Navigator.pop(ctx);
-                      if (mounted) {
-                        setState(() {});
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text('Username berhasil diubah! ✅'),
-                            backgroundColor: AppTheme.income,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        );
-                      }
-                    } catch (e) {
-                      if (ctx.mounted) {
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.primaryGradient,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primary.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      final name = controller.text.trim();
+                      if (name.isEmpty) {
                         ScaffoldMessenger.of(ctx).showSnackBar(
-                          SnackBar(
-                            content: Text('Gagal mengubah username: $e'),
-                            backgroundColor: AppTheme.expense,
-                          ),
+                          const SnackBar(content: Text('Username tidak boleh kosong')),
                         );
+                        return;
                       }
-                    }
-                  },
-                  child: const Text('Simpan'),
+                      try {
+                        await ref.read(authServiceProvider).updateDisplayName(name);
+                        if (ctx.mounted) Navigator.pop(ctx);
+                        if (mounted) {
+                          setState(() {});
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Username berhasil diubah! ✅'),
+                              backgroundColor: AppTheme.income,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (ctx.mounted) {
+                          ScaffoldMessenger.of(ctx).showSnackBar(
+                            SnackBar(
+                              content: Text('Gagal mengubah username: $e'),
+                              backgroundColor: AppTheme.expense,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: const Text('Simpan',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        )),
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -149,9 +175,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             bottom: MediaQuery.of(ctx).viewInsets.bottom,
           ),
           child: Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceVariant,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              border: Border.all(
+                color: AppTheme.border.withOpacity(0.5),
+                width: 0.5,
+              ),
             ),
             padding: const EdgeInsets.all(24),
             child: Column(
@@ -163,7 +193,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: AppTheme.textSecondary.withOpacity(0.3),
+                      color: AppTheme.textMuted.withOpacity(0.3),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -189,13 +219,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 TextFormField(
                   controller: newPasswordController,
                   obscureText: obscureNew,
+                  style: const TextStyle(color: AppTheme.textPrimary),
                   decoration: InputDecoration(
                     labelText: 'Password Baru',
-                    prefixIcon: const Icon(Icons.lock_rounded),
+                    prefixIcon: const Icon(Iconsax.lock),
                     suffixIcon: IconButton(
                       icon: Icon(obscureNew
-                          ? Icons.visibility_rounded
-                          : Icons.visibility_off_rounded),
+                          ? Iconsax.eye
+                          : Iconsax.eye_slash),
                       onPressed: () =>
                           setSheetState(() => obscureNew = !obscureNew),
                     ),
@@ -205,74 +236,94 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 TextFormField(
                   controller: confirmPasswordController,
                   obscureText: obscureConfirm,
+                  style: const TextStyle(color: AppTheme.textPrimary),
                   decoration: InputDecoration(
                     labelText: 'Konfirmasi Password Baru',
-                    prefixIcon: const Icon(Icons.lock_outline_rounded),
+                    prefixIcon: const Icon(Iconsax.lock_1),
                     suffixIcon: IconButton(
                       icon: Icon(obscureConfirm
-                          ? Icons.visibility_rounded
-                          : Icons.visibility_off_rounded),
-                      onPressed: () =>
-                          setSheetState(() => obscureConfirm = !obscureConfirm),
+                          ? Iconsax.eye
+                          : Iconsax.eye_slash),
+                      onPressed: () => setSheetState(
+                          () => obscureConfirm = !obscureConfirm),
                     ),
                   ),
                 ),
                 const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      final newPass = newPasswordController.text;
-                      final confirmPass = confirmPasswordController.text;
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: AppTheme.primaryGradient,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primary.withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final newPass = newPasswordController.text;
+                        final confirmPass = confirmPasswordController.text;
 
-                      if (newPass.isEmpty || confirmPass.isEmpty) {
-                        ScaffoldMessenger.of(ctx).showSnackBar(
-                          const SnackBar(content: Text('Semua field wajib diisi')),
-                        );
-                        return;
-                      }
-
-                      if (newPass.length < 6) {
-                        ScaffoldMessenger.of(ctx).showSnackBar(
-                          const SnackBar(content: Text('Password minimal 6 karakter')),
-                        );
-                        return;
-                      }
-
-                      if (newPass != confirmPass) {
-                        ScaffoldMessenger.of(ctx).showSnackBar(
-                          const SnackBar(content: Text('Password tidak cocok')),
-                        );
-                        return;
-                      }
-
-                      try {
-                        await ref.read(authServiceProvider).updatePassword(newPass);
-                        if (ctx.mounted) Navigator.pop(ctx);
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: const Text('Password berhasil diubah! 🔒'),
-                              backgroundColor: AppTheme.income,
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          );
-                        }
-                      } catch (e) {
-                        if (ctx.mounted) {
+                        if (newPass.isEmpty || confirmPass.isEmpty) {
                           ScaffoldMessenger.of(ctx).showSnackBar(
-                            SnackBar(
-                              content: Text('Gagal mengubah password: $e'),
-                              backgroundColor: AppTheme.expense,
-                            ),
+                            const SnackBar(content: Text('Semua field wajib diisi')),
                           );
+                          return;
                         }
-                      }
-                    },
-                    child: const Text('Ubah Password'),
+
+                        if (newPass.length < 6) {
+                          ScaffoldMessenger.of(ctx).showSnackBar(
+                            const SnackBar(content: Text('Password minimal 6 karakter')),
+                          );
+                          return;
+                        }
+
+                        if (newPass != confirmPass) {
+                          ScaffoldMessenger.of(ctx).showSnackBar(
+                            const SnackBar(content: Text('Password tidak cocok')),
+                          );
+                          return;
+                        }
+
+                        try {
+                          await ref.read(authServiceProvider).updatePassword(newPass);
+                          if (ctx.mounted) Navigator.pop(ctx);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Password berhasil diubah! 🔒'),
+                                backgroundColor: AppTheme.income,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (ctx.mounted) {
+                            ScaffoldMessenger.of(ctx).showSnackBar(
+                              SnackBar(
+                                content: Text('Gagal mengubah password: $e'),
+                                backgroundColor: AppTheme.expense,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: const Text('Ubah Password',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          )),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -288,19 +339,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppTheme.expense.withOpacity(0.1),
+                color: AppTheme.expense.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.logout_rounded, color: AppTheme.expense, size: 20),
+              child: const Icon(Iconsax.logout, color: AppTheme.expense, size: 20),
             ),
             const SizedBox(width: 12),
-            const Text('Keluar'),
+            const Text('Keluar', style: TextStyle(color: AppTheme.textPrimary)),
           ],
         ),
         content: const Text('Yakin ingin keluar dari akun kamu?'),
@@ -309,16 +359,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onPressed: () => Navigator.pop(ctx, false),
             child: const Text('Batal'),
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.expense,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
+          Container(
+            decoration: BoxDecoration(
+              gradient: AppTheme.expenseGradient,
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: const Text('Keluar'),
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              ),
+              child: const Text('Keluar',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            ),
           ),
         ],
       ),
@@ -353,7 +408,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         title: const Text('Pengaturan'),
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back_rounded),
+          icon: const Icon(Iconsax.arrow_left),
         ),
       ),
       body: Column(
@@ -369,14 +424,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   // Profile Card
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(22),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppTheme.primary, Color(0xFF9B8FFF)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
+                      gradient: AppTheme.balanceGradient,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primary.withOpacity(0.35),
+                          blurRadius: 24,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
                     ),
                     child: Row(
                       children: [
@@ -385,7 +443,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           height: 56,
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(18),
                           ),
                           child: Center(
                             child: Text(
@@ -415,7 +473,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               Text(
                                 email,
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.8),
+                                  color: Colors.white.withOpacity(0.7),
                                   fontSize: 13,
                                 ),
                               ),
@@ -424,38 +482,41 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                       ],
                     ),
-                  ),
+                  )
+                      .animate()
+                      .fadeIn(duration: 400.ms)
+                      .slideY(begin: 0.1, curve: Curves.easeOut),
                   const SizedBox(height: 28),
 
                   // Section: Akun
                   const Text(
-                    'Akun',
+                    'AKUN',
                     style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textSecondary,
-                      letterSpacing: 0.5,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textMuted,
+                      letterSpacing: 1.2,
                     ),
-                  ),
-                  const SizedBox(height: 8),
+                  ).animate().fadeIn(delay: 200.ms),
+                  const SizedBox(height: 10),
                   Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
+                    decoration: AppTheme.glassCard(borderRadius: 20),
                     child: Column(
                       children: [
                         _SettingsTile(
-                          icon: Icons.person_rounded,
-                          iconColor: AppTheme.primary,
+                          icon: Iconsax.user,
+                          iconColor: AppTheme.primaryLight,
                           title: 'Ubah Username',
                           subtitle: displayName,
                           onTap: _showChangeUsernameSheet,
                           showTopRadius: true,
                         ),
-                        const Divider(height: 1, indent: 56),
+                        Divider(
+                            height: 1,
+                            indent: 56,
+                            color: AppTheme.border.withOpacity(0.3)),
                         _SettingsTile(
-                          icon: Icons.lock_rounded,
+                          icon: Iconsax.lock,
                           iconColor: AppTheme.warning,
                           title: 'Ubah Password',
                           subtitle: '••••••••',
@@ -464,30 +525,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                       ],
                     ),
-                  ),
+                  ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
                   const SizedBox(height: 28),
 
                   // Section: Lainnya
                   const Text(
-                    'Lainnya',
+                    'LAINNYA',
                     style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textSecondary,
-                      letterSpacing: 0.5,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textMuted,
+                      letterSpacing: 1.2,
                     ),
-                  ),
-                  const SizedBox(height: 8),
+                  ).animate().fadeIn(delay: 400.ms),
+                  const SizedBox(height: 10),
                   Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
+                    decoration: AppTheme.glassCard(borderRadius: 20),
                     child: Column(
                       children: [
                         _SettingsTile(
-                          icon: Icons.info_rounded,
-                          iconColor: const Color(0xFF5BC0EB),
+                          icon: Iconsax.info_circle,
+                          iconColor: const Color(0xFF06B6D4),
                           title: 'Tentang Aplikasi',
                           subtitle: 'FinTrack — Poverty Tracker',
                           onTap: () {
@@ -499,15 +557,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 width: 48,
                                 height: 48,
                                 decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [AppTheme.primary, AppTheme.secondary],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
+                                  gradient: AppTheme.primaryGradient,
+                                  borderRadius: BorderRadius.circular(14),
                                 ),
                                 child: const Icon(
-                                  Icons.account_balance_wallet_rounded,
+                                  Iconsax.wallet_3,
                                   color: Colors.white,
                                   size: 24,
                                 ),
@@ -519,10 +573,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           },
                           showTopRadius: true,
                         ),
-                        const Divider(height: 1, indent: 56),
+                        Divider(
+                            height: 1,
+                            indent: 56,
+                            color: AppTheme.border.withOpacity(0.3)),
                         _SettingsTile(
-                          icon: Icons.smartphone_rounded,
-                          iconColor: AppTheme.textSecondary,
+                          icon: Iconsax.mobile,
+                          iconColor: AppTheme.textMuted,
                           title: 'Versi',
                           subtitle: '1.0.0',
                           onTap: null,
@@ -530,49 +587,60 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                       ],
                     ),
-                  ),
+                  ).animate().fadeIn(delay: 500.ms, duration: 400.ms),
                   const SizedBox(height: 32),
                 ],
               ),
             ),
           ),
 
-          // Logout Button — di paling bawah
+          // Logout Button
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
             child: SizedBox(
               width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _isLoading ? null : _handleLogout,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.expense.withOpacity(0.1),
-                  foregroundColor: AppTheme.expense,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppTheme.expense.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppTheme.expense.withOpacity(0.2),
+                    width: 0.5,
                   ),
                 ),
-                icon: _isLoading
-                    ? const SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppTheme.expense,
-                        ),
-                      )
-                    : const Icon(Icons.logout_rounded),
-                label: Text(
-                  _isLoading ? 'Keluar...' : 'Keluar',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                child: ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _handleLogout,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    foregroundColor: AppTheme.expense,
+                    shadowColor: Colors.transparent,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  icon: _isLoading
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppTheme.expense,
+                          ),
+                        )
+                      : const Icon(Iconsax.logout),
+                  label: Text(
+                    _isLoading ? 'Keluar...' : 'Keluar',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
+          ).animate().fadeIn(delay: 600.ms, duration: 400.ms),
         ],
       ),
     );
@@ -605,18 +673,18 @@ class _SettingsTile extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.vertical(
-          top: showTopRadius ? const Radius.circular(16) : Radius.zero,
-          bottom: showBottomRadius ? const Radius.circular(16) : Radius.zero,
+          top: showTopRadius ? const Radius.circular(20) : Radius.zero,
+          bottom: showBottomRadius ? const Radius.circular(20) : Radius.zero,
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(9),
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  color: iconColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: iconColor, size: 20),
               ),
@@ -645,9 +713,9 @@ class _SettingsTile extends StatelessWidget {
               ),
               if (onTap != null)
                 const Icon(
-                  Icons.chevron_right_rounded,
-                  color: AppTheme.textSecondary,
-                  size: 20,
+                  Iconsax.arrow_right_3,
+                  color: AppTheme.textMuted,
+                  size: 18,
                 ),
             ],
           ),
