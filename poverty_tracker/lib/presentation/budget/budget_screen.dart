@@ -85,195 +85,165 @@ class BudgetScreen extends ConsumerWidget {
                       final isOver = spent > budget.limitAmount;
                       final remaining = budget.limitAmount - spent;
 
-                      return Dismissible(
-                        key: Key(budget.id),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20),
-                          decoration: BoxDecoration(
-                            gradient: AppTheme.expenseGradient,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Icon(Iconsax.trash,
-                              color: Colors.white),
+                      return Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: AppTheme.glassCard(
+                          borderRadius: 20,
+                          borderColor: isOver
+                              ? AppTheme.expense.withOpacity(0.3)
+                              : null,
                         ),
-                        confirmDismiss: (_) async {
-                          final confirmed = await showDialog<bool>(
-                            context: context,
-                            builder: (ctx) => AlertDialog(
-                              title: const Text('Hapus Budget'),
-                              content: const Text(
-                                  'Yakin ingin menghapus budget ini?'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.pop(ctx, false),
-                                  child: const Text('Batal'),
-                                ),
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.pop(ctx, true),
-                                  style: TextButton.styleFrom(
-                                      foregroundColor: AppTheme.expense),
-                                  child: const Text('Hapus'),
-                                ),
-                              ],
-                            ),
-                          );
-                          if (confirmed == true) {
-                            try {
-                              await ref
-                                  .read(budgetServiceProvider)
-                                  .deleteBudget(budget.id);
-                              ref.invalidate(budgetsProvider);
-                              return true;
-                            } catch (e) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Gagal menghapus: $e'),
-                                    backgroundColor: AppTheme.expense,
-                                  ),
-                                );
-                              }
-                              return false;
-                            }
-                          }
-                          return false;
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(18),
-                          decoration: AppTheme.glassCard(
-                            borderRadius: 20,
-                            borderColor: isOver
-                                ? AppTheme.expense.withOpacity(0.3)
-                                : null,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: (isOver
-                                                  ? AppTheme.expense
-                                                  : AppTheme.primary)
-                                              .withOpacity(0.12),
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                        ),
-                                        child: Icon(
-                                          _getCategoryIcon(budget.category),
-                                          color: isOver
-                                              ? AppTheme.expense
-                                              : AppTheme.primaryLight,
-                                          size: 18,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Text(budget.category,
-                                          style: const TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              color: AppTheme.textPrimary,
-                                              fontSize: 15)),
-                                    ],
-                                  ),
-                                  if (isOver)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 10, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color:
-                                            AppTheme.expense.withOpacity(0.15),
-                                        borderRadius:
-                                            BorderRadius.circular(20),
-                                      ),
-                                      child: const Text(
-                                        '⚠️ Over',
-                                        style: TextStyle(
-                                          color: AppTheme.expense,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                              const SizedBox(height: 14),
-                              // Progress bar
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(6),
-                                child: Stack(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
                                   children: [
                                     Container(
-                                      height: 8,
+                                      padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: AppTheme.surfaceLight
-                                            .withOpacity(0.5),
+                                        color: (isOver
+                                                ? AppTheme.expense
+                                                : AppTheme.primary)
+                                            .withOpacity(0.12),
                                         borderRadius:
-                                            BorderRadius.circular(6),
+                                            BorderRadius.circular(10),
+                                      ),
+                                      child: Icon(
+                                        _getCategoryIcon(budget.category),
+                                        color: isOver
+                                            ? AppTheme.expense
+                                            : AppTheme.primaryLight,
+                                        size: 18,
                                       ),
                                     ),
-                                    FractionallySizedBox(
-                                      widthFactor: progress,
-                                      child: Container(
-                                        height: 8,
+                                    const SizedBox(width: 12),
+                                    Text(budget.category,
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            color: AppTheme.textPrimary,
+                                            fontSize: 15)),
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    if (isOver)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10, vertical: 4),
                                         decoration: BoxDecoration(
-                                          gradient: isOver
-                                              ? AppTheme.expenseGradient
-                                              : AppTheme.primaryGradient,
+                                          color:
+                                              AppTheme.expense.withOpacity(0.15),
                                           borderRadius:
-                                              BorderRadius.circular(6),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: (isOver
-                                                      ? AppTheme.expense
-                                                      : AppTheme.primary)
-                                                  .withOpacity(0.4),
-                                              blurRadius: 6,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ],
+                                              BorderRadius.circular(20),
+                                        ),
+                                        child: const Text(
+                                          '⚠️ Over',
+                                          style: TextStyle(
+                                            color: AppTheme.expense,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    const SizedBox(width: 8),
+                                    GestureDetector(
+                                      onTap: () => _showDeleteBudgetDialog(
+                                        context,
+                                        ref,
+                                        budget,
+                                        formatter,
+                                      ),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.expense.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(10),
+                                          border: Border.all(
+                                            color: AppTheme.expense.withOpacity(0.2),
+                                          ),
+                                        ),
+                                        child: const Icon(
+                                          Iconsax.trash,
+                                          size: 16,
+                                          color: AppTheme.expense,
                                         ),
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
-                              const SizedBox(height: 10),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            // Progress bar
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: Stack(
                                 children: [
-                                  Text(
-                                    '${formatter.format(spent)} dipakai',
-                                    style: const TextStyle(
-                                        fontSize: 12,
-                                        color: AppTheme.textSecondary),
+                                  Container(
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.surfaceLight
+                                          .withOpacity(0.5),
+                                      borderRadius:
+                                          BorderRadius.circular(6),
+                                    ),
                                   ),
-                                  Text(
-                                    isOver
-                                        ? 'Lebih ${formatter.format(-remaining)}'
-                                        : 'Sisa ${formatter.format(remaining)}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: isOver
-                                          ? AppTheme.expense
-                                          : AppTheme.income,
-                                      fontWeight: FontWeight.w500,
+                                  FractionallySizedBox(
+                                    widthFactor: progress,
+                                    child: Container(
+                                      height: 8,
+                                      decoration: BoxDecoration(
+                                        gradient: isOver
+                                            ? AppTheme.expenseGradient
+                                            : AppTheme.primaryGradient,
+                                        borderRadius:
+                                            BorderRadius.circular(6),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: (isOver
+                                                    ? AppTheme.expense
+                                                    : AppTheme.primary)
+                                                .withOpacity(0.4),
+                                            blurRadius: 6,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
-                            ],
-                          ),
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  '${formatter.format(spent)} dipakai',
+                                  style: const TextStyle(
+                                      fontSize: 12,
+                                      color: AppTheme.textSecondary),
+                                ),
+                                Text(
+                                  isOver
+                                      ? 'Lebih ${formatter.format(-remaining)}'
+                                      : 'Sisa ${formatter.format(remaining)}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: isOver
+                                        ? AppTheme.expense
+                                        : AppTheme.income,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       )
                           .animate()
@@ -335,6 +305,169 @@ class BudgetScreen extends ConsumerWidget {
     }
   }
 
+  void _showDeleteBudgetDialog(
+    BuildContext context,
+    WidgetRef ref,
+    BudgetModel budget,
+    NumberFormat formatter,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceVariant,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: AppTheme.expense.withOpacity(0.2),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.expense.withOpacity(0.1),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Warning icon
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.expense.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.expenseGradient,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.expense.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Iconsax.trash,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Hapus Budget?',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Budget "${budget.category}" sebesar ${formatter.format(budget.limitAmount)} akan dihapus secara permanen.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppTheme.textSecondary,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceLight.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text(
+                          'Batal',
+                          style: TextStyle(
+                            color: AppTheme.textPrimary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: AppTheme.expenseGradient,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.expense.withOpacity(0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text(
+                          'Hapus',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (confirmed == true) {
+      try {
+        await ref.read(budgetServiceProvider).deleteBudget(budget.id);
+        ref.invalidate(budgetsProvider);
+        ref.invalidate(spendingByCategoryProvider);
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Gagal menghapus: $e'),
+              backgroundColor: AppTheme.expense,
+            ),
+          );
+        }
+      }
+    }
+  }
   void _showAddBudgetDialog(BuildContext context, WidgetRef ref) {
     final amountController = TextEditingController();
     String selectedCategory = 'Makanan';

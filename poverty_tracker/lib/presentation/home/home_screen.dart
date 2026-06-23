@@ -9,12 +9,161 @@ import '../../data/repositories/auth_provider.dart';
 import '../../data/repositories/transaction_provider.dart';
 import '../../data/models/transaction_model.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final summaryAsync = ref.watch(summaryProvider);
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  late DateTime _selectedMonth;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _selectedMonth = DateTime(now.year, now.month);
+  }
+
+  void _showMonthPicker() {
+    final now = DateTime.now();
+    final months = List.generate(12, (i) {
+      final date = DateTime(now.year, now.month - i);
+      return DateTime(date.year, date.month);
+    });
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: AppTheme.surfaceVariant,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppTheme.textMuted.withOpacity(0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Pilih Bulan',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: months.length,
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  itemBuilder: (context, index) {
+                    final month = months[index];
+                    final isSelected = month.year == _selectedMonth.year &&
+                        month.month == _selectedMonth.month;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(14),
+                          onTap: () {
+                            setState(() => _selectedMonth = month);
+                            Navigator.pop(context);
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 18, vertical: 14),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppTheme.primary.withOpacity(0.15)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: isSelected
+                                    ? AppTheme.primary.withOpacity(0.4)
+                                    : Colors.transparent,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? AppTheme.primary.withOpacity(0.2)
+                                        : AppTheme.surfaceLight
+                                            .withOpacity(0.3),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(
+                                    Iconsax.calendar_1,
+                                    size: 18,
+                                    color: isSelected
+                                        ? AppTheme.primaryLight
+                                        : AppTheme.textSecondary,
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Text(
+                                    DateFormat('MMMM yyyy', 'id_ID')
+                                        .format(month),
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
+                                      color: isSelected
+                                          ? AppTheme.primaryLight
+                                          : AppTheme.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                                if (isSelected)
+                                  Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.primary,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Icon(
+                                      Icons.check,
+                                      size: 14,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final transactionsAsync = ref.watch(transactionsProvider);
     // Watch auth state so display name updates when changed in settings
     ref.watch(authStateProvider);
@@ -128,253 +277,256 @@ class HomeScreen extends ConsumerWidget {
                       begin: -0.1,
                       curve: Curves.easeOut,
                     ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
 
-                // Balance Card
-                summaryAsync.when(
-                  data: (summary) => Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(24),
+                // Month selector chip
+                GestureDetector(
+                  onTap: _showMonthPicker,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      gradient: AppTheme.balanceGradient,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.primary.withOpacity(0.35),
-                          blurRadius: 30,
-                          offset: const Offset(0, 12),
-                        ),
-                      ],
+                      color: AppTheme.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                          color: AppTheme.primary.withOpacity(0.2)),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(Iconsax.wallet_3,
-                                  color: Colors.white, size: 16),
-                            ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'Total Saldo',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
+                        const Icon(Iconsax.calendar_1,
+                            size: 16, color: AppTheme.primaryLight),
+                        const SizedBox(width: 6),
                         Text(
-                          formatter.format(summary['balance'] ?? 0),
+                          DateFormat('MMMM yyyy', 'id_ID')
+                              .format(_selectedMonth),
                           style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 30,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.5,
+                            color: AppTheme.primaryLight,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 24),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _SummaryItem(
-                                label: 'Pemasukan',
-                                amount:
-                                    formatter.format(summary['income'] ?? 0),
-                                icon: Icons.arrow_downward_rounded,
-                                color: AppTheme.income,
-                              ),
-                            ),
-                            Container(
-                              width: 1,
-                              height: 40,
-                              color: Colors.white.withOpacity(0.2),
-                            ),
-                            Expanded(
-                              child: _SummaryItem(
-                                label: 'Pengeluaran',
-                                amount:
-                                    formatter.format(summary['expense'] ?? 0),
-                                icon: Icons.arrow_upward_rounded,
-                                color: AppTheme.expense,
-                              ),
-                            ),
-                          ],
-                        ),
+                        const SizedBox(width: 4),
+                        const Icon(Iconsax.arrow_down_1,
+                            size: 14, color: AppTheme.primaryLight),
                       ],
                     ),
-                  )
-                      .animate()
-                      .fadeIn(delay: 200.ms, duration: 500.ms)
-                      .slideY(begin: 0.15, curve: Curves.easeOut),
-                  loading: () => _buildShimmerCard(),
-                  error: (e, _) => Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: AppTheme.glassCard(),
-                    child: Text('Error: $e',
-                        style: const TextStyle(color: AppTheme.expense)),
                   ),
-                ),
-                const SizedBox(height: 28),
+                ).animate().fadeIn(duration: 300.ms),
+                const SizedBox(height: 16),
 
-                // Quick Actions
-                Row(
-                  children: [
-                    Expanded(
-                      child: _QuickAction(
-                        icon: Iconsax.add,
-                        label: 'Tambah',
-                        gradient: AppTheme.primaryGradient,
-                        onTap: () async {
-                          await context.push('/add-transaction');
-                          ref.invalidate(transactionsProvider);
-                          ref.invalidate(summaryProvider);
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _QuickAction(
-                        icon: Iconsax.chart_1,
-                        label: 'Budget',
-                        gradient: AppTheme.incomeGradient,
-                        onTap: () => context.go('/budget'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _QuickAction(
-                        icon: Iconsax.graph,
-                        label: 'Laporan',
-                        gradient: AppTheme.expenseGradient,
-                        onTap: () => context.go('/report'),
-                      ),
-                    ),
-                  ],
-                )
-                    .animate()
-                    .fadeIn(delay: 350.ms, duration: 500.ms)
-                    .slideY(begin: 0.1, curve: Curves.easeOut),
-                const SizedBox(height: 28),
-
-                // Transaksi Terakhir
-                const Text(
-                  'Transaksi Terakhir',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimary,
-                  ),
-                ).animate().fadeIn(delay: 400.ms),
-                const SizedBox(height: 14),
+                // Balance Card — computed from monthly transactions
                 transactionsAsync.when(
-                  data: (transactions) => transactions.isEmpty
-                      ? Center(
-                          child: Column(
-                            children: [
-                              const SizedBox(height: 40),
-                              Container(
-                                padding: const EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.surfaceVariant
-                                      .withOpacity(0.5),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(Iconsax.receipt_text,
-                                    size: 48,
-                                    color: AppTheme.textMuted),
-                              ),
-                              const SizedBox(height: 16),
-                              const Text(
-                                'Belum ada transaksi',
-                                style: TextStyle(
-                                  color: AppTheme.textSecondary,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              const Text(
-                                'Mulai catat pengeluaranmu!',
-                                style: TextStyle(
-                                  color: AppTheme.textMuted,
-                                  fontSize: 13,
-                                ),
+                  data: (transactions) {
+                    final thisMonth = transactions
+                        .where((t) =>
+                            t.date.month == _selectedMonth.month &&
+                            t.date.year == _selectedMonth.year)
+                        .toList();
+
+                    final totalIncome = thisMonth
+                        .where((t) => t.type == 'income')
+                        .fold(0.0, (sum, t) => sum + t.amount);
+                    final totalExpense = thisMonth
+                        .where((t) => t.type == 'expense')
+                        .fold(0.0, (sum, t) => sum + t.amount);
+                    final balance = totalIncome - totalExpense;
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Balance Card
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            gradient: AppTheme.balanceGradient,
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.primary.withOpacity(0.35),
+                                blurRadius: 30,
+                                offset: const Offset(0, 12),
                               ),
                             ],
                           ),
-                        ).animate().fadeIn(delay: 500.ms)
-                      : ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: transactions.length > 10
-                              ? 10
-                              : transactions.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 10),
-                          itemBuilder: (context, index) =>
-                              _TransactionItem(
-                            transaction: transactions[index],
-                            formatter: formatter,
-                            onTap: () async {
-                              final result = await context.push<bool>(
-                                '/edit-transaction',
-                                extra: transactions[index],
-                              );
-                              if (result == true) {
-                                ref.invalidate(transactionsProvider);
-                                ref.invalidate(summaryProvider);
-                              }
-                            },
-                            onDelete: () async {
-                              try {
-                                await ref
-                                    .read(transactionServiceProvider)
-                                    .deleteTransaction(
-                                        transactions[index].id);
-                                ref.invalidate(transactionsProvider);
-                                ref.invalidate(summaryProvider);
-                                return true;
-                              } catch (e) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content:
-                                          Text('Gagal menghapus: $e'),
-                                      backgroundColor: AppTheme.expense,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
-                                  );
-                                }
-                                return false;
-                              }
-                            },
-                          )
-                                  .animate()
-                                  .fadeIn(
-                                    delay: Duration(
-                                        milliseconds: 450 + (index * 60)),
-                                    duration: 400.ms,
-                                  )
-                                  .slideX(
-                                    begin: 0.05,
-                                    curve: Curves.easeOut,
+                                    child: const Icon(Iconsax.wallet_3,
+                                        color: Colors.white, size: 16),
                                   ),
-                        ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Saldo Bulan ${DateFormat('MMMM', 'id_ID').format(_selectedMonth)}',
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                formatter.format(balance),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _SummaryItem(
+                                      label: 'Pemasukan',
+                                      amount: formatter.format(totalIncome),
+                                      icon: Icons.arrow_downward_rounded,
+                                      color: AppTheme.income,
+                                    ),
+                                  ),
+                                  Container(
+                                    width: 1,
+                                    height: 40,
+                                    color: Colors.white.withOpacity(0.2),
+                                  ),
+                                  Expanded(
+                                    child: _SummaryItem(
+                                      label: 'Pengeluaran',
+                                      amount: formatter.format(totalExpense),
+                                      icon: Icons.arrow_upward_rounded,
+                                      color: AppTheme.expense,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        )
+                            .animate()
+                            .fadeIn(delay: 200.ms, duration: 500.ms)
+                            .slideY(begin: 0.15, curve: Curves.easeOut),
+                        const SizedBox(height: 28),
+
+                        // Quick Actions
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _QuickAction(
+                                icon: Iconsax.add,
+                                label: 'Tambah',
+                                gradient: AppTheme.primaryGradient,
+                                onTap: () async {
+                                  await context.push('/add-transaction');
+                                  ref.invalidate(transactionsProvider);
+                                  ref.invalidate(summaryProvider);
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _QuickAction(
+                                icon: Iconsax.chart_1,
+                                label: 'Budget',
+                                gradient: AppTheme.incomeGradient,
+                                onTap: () => context.go('/budget'),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _QuickAction(
+                                icon: Iconsax.graph,
+                                label: 'Laporan',
+                                gradient: AppTheme.expenseGradient,
+                                onTap: () => context.go('/report'),
+                              ),
+                            ),
+                          ],
+                        )
+                            .animate()
+                            .fadeIn(delay: 350.ms, duration: 500.ms)
+                            .slideY(begin: 0.1, curve: Curves.easeOut),
+                        const SizedBox(height: 28),
+
+                        // Transaksi Terakhir (filtered by month)
+                        Text(
+                          'Transaksi Terakhir',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ).animate().fadeIn(delay: 400.ms),
+                        const SizedBox(height: 14),
+                        thisMonth.isEmpty
+                            ? Center(
+                                child: Column(
+                                  children: [
+                                    const SizedBox(height: 40),
+                                    Container(
+                                      padding: const EdgeInsets.all(20),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.surfaceVariant
+                                            .withOpacity(0.5),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(Iconsax.receipt_text,
+                                          size: 48,
+                                          color: AppTheme.textMuted),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    const Text(
+                                      'Belum ada transaksi',
+                                      style: TextStyle(
+                                        color: AppTheme.textSecondary,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    const Text(
+                                      'Mulai catat pengeluaranmu!',
+                                      style: TextStyle(
+                                        color: AppTheme.textMuted,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ).animate().fadeIn(delay: 500.ms)
+                            : _buildGroupedTransactions(
+                                context,
+                                ref,
+                                thisMonth.length > 10
+                                    ? thisMonth.sublist(0, 10)
+                                    : thisMonth,
+                                formatter,
+                              ),
+                      ],
+                    );
+                  },
                   loading: () => Column(
-                    children: List.generate(
-                      3,
-                      (_) => Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: _buildShimmerTile(),
+                    children: [
+                      _buildShimmerCard(),
+                      const SizedBox(height: 28),
+                      ...List.generate(
+                        3,
+                        (_) => Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: _buildShimmerTile(),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                   error: (e, _) => Text('Error: $e',
                       style: const TextStyle(color: AppTheme.expense)),
@@ -386,6 +538,167 @@ class HomeScreen extends ConsumerWidget {
       ),
     );
   }
+
+  Widget _buildGroupedTransactions(
+    BuildContext context,
+    WidgetRef ref,
+    List<TransactionModel> transactions,
+    NumberFormat formatter,
+  ) {
+    final incomeList =
+        transactions.where((t) => t.type == 'income').toList();
+    final expenseList =
+        transactions.where((t) => t.type == 'expense').toList();
+
+    int animIndex = 0;
+
+    Widget buildSection({
+      required String label,
+      required IconData icon,
+      required Color color,
+      required List<TransactionModel> items,
+    }) {
+      if (items.isEmpty) return const SizedBox.shrink();
+      final header = Padding(
+        padding: const EdgeInsets.only(top: 6, bottom: 8),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, size: 14, color: color),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '${items.length}',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Container(
+                height: 1,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      color.withOpacity(0.25),
+                      color.withOpacity(0.0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      )
+          .animate()
+          .fadeIn(
+            delay: Duration(milliseconds: 420 + (animIndex * 60)),
+            duration: 400.ms,
+          )
+          .slideX(begin: -0.05, curve: Curves.easeOut);
+
+      animIndex++;
+
+      final itemWidgets = items.map((transaction) {
+        final currentIndex = animIndex++;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: _TransactionItem(
+            transaction: transaction,
+            formatter: formatter,
+            onTap: () async {
+              final result = await context.push<bool>(
+                '/edit-transaction',
+                extra: transaction,
+              );
+              if (result == true) {
+                ref.invalidate(transactionsProvider);
+                ref.invalidate(summaryProvider);
+              }
+            },
+            onDelete: () async {
+              try {
+                await ref
+                    .read(transactionServiceProvider)
+                    .deleteTransaction(transaction.id);
+                ref.invalidate(transactionsProvider);
+                ref.invalidate(summaryProvider);
+                return true;
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Gagal menghapus: $e'),
+                      backgroundColor: AppTheme.expense,
+                    ),
+                  );
+                }
+                return false;
+              }
+            },
+          )
+              .animate()
+              .fadeIn(
+                delay: Duration(milliseconds: 450 + (currentIndex * 60)),
+                duration: 400.ms,
+              )
+              .slideX(
+                begin: 0.05,
+                curve: Curves.easeOut,
+              ),
+        );
+      }).toList();
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [header, ...itemWidgets],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        buildSection(
+          label: 'Pemasukan',
+          icon: Icons.arrow_downward_rounded,
+          color: AppTheme.income,
+          items: incomeList,
+        ),
+        if (incomeList.isNotEmpty && expenseList.isNotEmpty)
+          const SizedBox(height: 6),
+        buildSection(
+          label: 'Pengeluaran',
+          icon: Icons.arrow_upward_rounded,
+          color: AppTheme.expense,
+          items: expenseList,
+        ),
+      ],
+    );
+  }
+
 
   Widget _buildShimmerCard() {
     return Container(

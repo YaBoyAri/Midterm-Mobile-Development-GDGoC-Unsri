@@ -633,6 +633,205 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                           ),
                         ],
                       ),
+
+                      // ── Detail List of filtered transactions ──
+                      Builder(
+                        builder: (context) {
+                          final filteredTransactions = thisMonth
+                              .where((t) => t.type == _selectedFilter)
+                              .toList()
+                            ..sort((a, b) => b.date.compareTo(a.date));
+
+                          final isIncome = _selectedFilter == 'income';
+                          final accentColor = isIncome
+                              ? AppTheme.income
+                              : AppTheme.expense;
+
+                          if (filteredTransactions.isEmpty) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 24),
+                              child: Center(
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      isIncome ? Iconsax.arrow_down : Iconsax.arrow_up_1,
+                                      size: 32,
+                                      color: AppTheme.textMuted.withOpacity(0.4),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      isIncome
+                                          ? 'Belum ada pemasukan bulan ini'
+                                          : 'Belum ada pengeluaran bulan ini',
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color: AppTheme.textMuted,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
+
+                          return Column(
+                            children: [
+                              const SizedBox(height: 16),
+                              // Divider
+                              Container(
+                                height: 1,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.transparent,
+                                      accentColor.withOpacity(0.3),
+                                      Colors.transparent,
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              // Header
+                              Row(
+                                children: [
+                                  Icon(
+                                    isIncome ? Iconsax.arrow_down : Iconsax.arrow_up_1,
+                                    size: 16,
+                                    color: accentColor,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Detail ${isIncome ? 'Pemasukan' : 'Pengeluaran'}',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: accentColor,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: accentColor.withOpacity(0.12),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      '${filteredTransactions.length} transaksi',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: accentColor,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              // Transaction list
+                              ...filteredTransactions.asMap().entries.map((entry) {
+                                final index = entry.key;
+                                final t = entry.value;
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.surface.withOpacity(0.5),
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: AppTheme.border.withOpacity(0.3),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        // Category icon
+                                        Container(
+                                          width: 42,
+                                          height: 42,
+                                          decoration: BoxDecoration(
+                                            color: accentColor.withOpacity(0.12),
+                                            borderRadius: BorderRadius.circular(14),
+                                          ),
+                                          child: Center(
+                                            child: Icon(
+                                              _getCategoryIcon(t.category),
+                                              color: accentColor,
+                                              size: 20,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        // Category + Note + Date
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                t.category,
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: AppTheme.textPrimary,
+                                                ),
+                                              ),
+                                              if (t.note != null &&
+                                                  t.note!.isNotEmpty)
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(top: 2),
+                                                  child: Text(
+                                                    t.note!,
+                                                    style: const TextStyle(
+                                                      fontSize: 12,
+                                                      color: AppTheme.textMuted,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                DateFormat('dd MMM yyyy', 'id_ID')
+                                                    .format(t.date),
+                                                style: const TextStyle(
+                                                  fontSize: 11,
+                                                  color: AppTheme.textMuted,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        // Amount
+                                        Text(
+                                          '${isIncome ? '+' : '-'}${formatter.format(t.amount)}',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                            color: accentColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                                    .animate()
+                                    .fadeIn(
+                                      delay: Duration(milliseconds: 50 * index),
+                                      duration: 300.ms,
+                                    )
+                                    .slideX(
+                                      begin: 0.05,
+                                      delay: Duration(milliseconds: 50 * index),
+                                      duration: 300.ms,
+                                      curve: Curves.easeOut,
+                                    );
+                              }),
+                            ],
+                          );
+                        },
+                      ),
                     ],
                   ),
                 )
@@ -854,6 +1053,30 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
     return weekly;
   }
 
+
+
+  IconData _getCategoryIcon(String category) {
+    switch (category.toLowerCase()) {
+      case 'makanan':
+        return Iconsax.coffee;
+      case 'transportasi':
+        return Iconsax.car;
+      case 'belanja':
+        return Iconsax.bag_2;
+      case 'hiburan':
+        return Iconsax.game;
+      case 'kesehatan':
+        return Iconsax.health;
+      case 'gaji':
+        return Iconsax.briefcase;
+      case 'investasi':
+        return Iconsax.chart_2;
+      case 'tagihan':
+        return Iconsax.receipt_text;
+      default:
+        return Iconsax.money;
+    }
+  }
 
   static const _pieColors = [
     Color(0xFF818CF8), // Indigo

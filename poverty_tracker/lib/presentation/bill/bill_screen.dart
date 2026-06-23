@@ -558,58 +558,7 @@ class _BillItem extends StatelessWidget {
     final daysLeft =
         bill.dueDate.difference(DateTime.now()).inDays;
 
-    return Dismissible(
-      key: Key(bill.id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        decoration: BoxDecoration(
-          gradient: AppTheme.expenseGradient,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: const Icon(Iconsax.trash, color: Colors.white),
-      ),
-      confirmDismiss: (_) async {
-        final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Hapus Tagihan'),
-            content:
-                const Text('Yakin ingin menghapus tagihan ini?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Batal'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                style: TextButton.styleFrom(
-                    foregroundColor: AppTheme.expense),
-                child: const Text('Hapus'),
-              ),
-            ],
-          ),
-        );
-        if (confirmed == true) {
-          try {
-            onDelete();
-            return true;
-          } catch (e) {
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Gagal menghapus: $e'),
-                  backgroundColor: AppTheme.expense,
-                ),
-              );
-            }
-            return false;
-          }
-        }
-        return false;
-      },
-      child: Container(
+    return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppTheme.surfaceVariant.withOpacity(0.6),
@@ -670,10 +619,6 @@ class _BillItem extends StatelessWidget {
                         ]
                       : null,
                 ),
-                child: bill.isPaid
-                    ? const Icon(Iconsax.tick_circle5,
-                        color: Colors.white, size: 16)
-                    : null,
               ),
             ),
             const SizedBox(width: 14),
@@ -761,31 +706,28 @@ class _BillItem extends StatelessWidget {
                 fontSize: 15,
               ),
             ),
-            // Delete button — appears when bill is paid
-            if (bill.isPaid) ...[
-              const SizedBox(width: 10),
-              GestureDetector(
-                onTap: () => _showDeleteConfirmation(context),
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.expense.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: AppTheme.expense.withOpacity(0.2),
-                    ),
-                  ),
-                  child: const Icon(
-                    Iconsax.trash,
-                    size: 16,
-                    color: AppTheme.expense,
+            // Delete button
+            const SizedBox(width: 10),
+            GestureDetector(
+              onTap: () => _showDeleteConfirmation(context),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.expense.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: AppTheme.expense.withOpacity(0.2),
                   ),
                 ),
+                child: const Icon(
+                  Iconsax.trash,
+                  size: 16,
+                  color: AppTheme.expense,
+                ),
               ),
-            ],
+            ),
           ],
         ),
-      ),
     );
   }
 }
