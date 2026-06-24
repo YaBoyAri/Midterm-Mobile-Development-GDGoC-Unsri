@@ -106,7 +106,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: 24),
                   Center(
                     child: const Text(
-                      'FinTrack',
+                      'Pov-Track',
                       style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.w800,

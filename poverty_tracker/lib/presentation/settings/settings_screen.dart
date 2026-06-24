@@ -547,11 +547,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           icon: Iconsax.info_circle,
                           iconColor: const Color(0xFF06B6D4),
                           title: 'Tentang Aplikasi',
-                          subtitle: 'FinTrack — Poverty Tracker',
+                          subtitle: 'Poverty Tracker — Aplikasi untuk melacak Kemiskinan anda (aint got that penny left in the pocket dawg)',
                           onTap: () {
                             showAboutDialog(
                               context: context,
-                              applicationName: 'FinTrack',
+                              applicationName: 'Pov-Track',
                               applicationVersion: '1.0.0',
                               applicationIcon: Container(
                                 width: 48,

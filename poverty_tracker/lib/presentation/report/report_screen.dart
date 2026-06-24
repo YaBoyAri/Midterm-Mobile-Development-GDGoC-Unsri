@@ -247,7 +247,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                         amount: formatter.format(totalIncome),
                         color: AppTheme.income,
                         gradient: AppTheme.incomeGradient,
-                        icon: Iconsax.arrow_down,
+                        icon: Icons.arrow_downward_rounded,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -257,7 +257,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                         amount: formatter.format(totalExpense),
                         color: AppTheme.expense,
                         gradient: AppTheme.expenseGradient,
-                        icon: Iconsax.arrow_up_1,
+                        icon: Icons.arrow_upward_rounded,
                       ),
                     ),
                   ],
@@ -654,7 +654,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                                 child: Column(
                                   children: [
                                     Icon(
-                                      isIncome ? Iconsax.arrow_down : Iconsax.arrow_up_1,
+                                      isIncome ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
                                       size: 32,
                                       color: AppTheme.textMuted.withOpacity(0.4),
                                     ),
@@ -695,7 +695,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                               Row(
                                 children: [
                                   Icon(
-                                    isIncome ? Iconsax.arrow_down : Iconsax.arrow_up_1,
+                                    isIncome ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
                                     size: 16,
                                     color: accentColor,
                                   ),
