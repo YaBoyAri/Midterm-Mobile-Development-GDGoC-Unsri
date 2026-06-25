@@ -6,8 +6,19 @@ Dibangun dengan **Flutter** (frontend) dan **Supabase** (backend: Authentication
 
 ---
 
+## 📲 Download APK
+
+Ingin langsung mencoba aplikasinya? Download APK terbaru dari halaman **Releases**:
+
+👉 [**Download Poverty Tracker v1.0.0 (APK)**](https://github.com/YaBoyAri/Midterm-Mobile-Development-GDGoC-Unsri/releases/tag/v1.0.0)
+
+> **Catatan:** Aktifkan **"Install from Unknown Sources"** di pengaturan HP Android kamu sebelum menginstall APK.
+
+---
+
 ## Daftar Isi
 
+- [Download APK](#-download-apk)
 - [Apa Itu Pov-Track](#apa-itu-pov-track)
 - [Fitur](#fitur)
 - [Tech Stack & Dependensi](#tech-stack--dependensi)
