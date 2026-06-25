@@ -8,7 +8,7 @@ Dibangun dengan **Flutter** (frontend) dan **Supabase** (backend: Authentication
 
 ## 📲 Download APK
 
-Ingin langsung mencoba aplikasinya? Download APK terbaru dari halaman **Releases**:
+Kalau mau coba aplikasi bisa langsung Download Aplikasinya dari halaman **Releases**:
 
 👉 [**Download Poverty Tracker v1.0.0 (APK)**](https://github.com/YaBoyAri/Midterm-Mobile-Development-GDGoC-Unsri/releases/tag/v1.0.0)
 
