@@ -8,6 +8,8 @@ import '../../core/theme/app_theme.dart';
 import '../../data/repositories/auth_provider.dart';
 import '../../data/repositories/transaction_provider.dart';
 import '../../data/models/transaction_model.dart';
+import '../../data/services/notification_service.dart';
+import '../../data/services/bill_service.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -24,6 +26,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.initState();
     final now = DateTime.now();
     _selectedMonth = DateTime(now.year, now.month);
+    // Check overdue/upcoming bills on app open
+    _checkBillNotifications();
+  }
+
+  Future<void> _checkBillNotifications() async {
+    try {
+      final bills = await BillService().getBills();
+      await NotificationService().checkBillsAndNotify(bills);
+    } catch (_) {
+      // Silently fail — notifications are non-critical
+    }
   }
 
   void _showMonthPicker() {

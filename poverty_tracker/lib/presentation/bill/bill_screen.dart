@@ -7,6 +7,7 @@ import 'package:iconsax/iconsax.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/bill_model.dart';
 import '../../data/repositories/bill_provider.dart';
+import '../../data/services/notification_service.dart';
 
 class BillScreen extends ConsumerWidget {
   const BillScreen({super.key});
@@ -100,6 +101,9 @@ class BillScreen extends ConsumerWidget {
                                 .read(billServiceProvider)
                                 .togglePaid(entry.value.id, true);
                             ref.invalidate(billsProvider);
+                            // Refresh bill notifications
+                            final updatedBills = await ref.read(billServiceProvider).getBills();
+                            await NotificationService().checkBillsAndNotify(updatedBills);
                           },
                           onDelete: () async {
                             await ref
@@ -160,6 +164,9 @@ class BillScreen extends ConsumerWidget {
                                 .read(billServiceProvider)
                                 .togglePaid(entry.value.id, false);
                             ref.invalidate(billsProvider);
+                            // Refresh bill notifications
+                            final updatedBills = await ref.read(billServiceProvider).getBills();
+                            await NotificationService().checkBillsAndNotify(updatedBills);
                           },
                           onDelete: () async {
                             await ref
@@ -357,6 +364,9 @@ class BillScreen extends ConsumerWidget {
                           .read(billServiceProvider)
                           .addBill(bill);
                       ref.invalidate(billsProvider);
+                      // Send notification for upcoming/overdue bills
+                      final allBills = await ref.read(billServiceProvider).getBills();
+                      await NotificationService().checkBillsAndNotify(allBills);
                       if (context.mounted) Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(

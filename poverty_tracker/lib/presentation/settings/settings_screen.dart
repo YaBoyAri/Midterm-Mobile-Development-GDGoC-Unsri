@@ -5,6 +5,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:iconsax/iconsax.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/repositories/auth_provider.dart';
+import '../../data/services/biometric_service.dart';
+import '../../core/router/app_router.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -15,6 +17,64 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _isLoading = false;
+  bool _biometricEnabled = false;
+  bool _biometricAvailable = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBiometricState();
+  }
+
+  Future<void> _loadBiometricState() async {
+    final service = BiometricService();
+    final available = await service.isAvailable();
+    final enabled = await service.isBiometricEnabled();
+    if (mounted) {
+      setState(() {
+        _biometricAvailable = available;
+        _biometricEnabled = enabled;
+      });
+    }
+  }
+
+  Future<void> _toggleBiometric(bool value) async {
+    final service = BiometricService();
+
+    if (value) {
+      // Turning ON — verify biometric first
+      final success = await service.authenticate(
+        reason: 'Verifikasi sidik jari untuk mengaktifkan kunci biometrik',
+      );
+      if (!success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Verifikasi gagal. Kunci biometrik tidak diaktifkan.'),
+              backgroundColor: AppTheme.expense,
+            ),
+          );
+        }
+        return;
+      }
+    }
+
+    await service.setBiometricEnabled(value);
+    BiometricState.needsBiometric = value && _biometricAvailable;
+    if (!value) BiometricState.hasVerified = false;
+
+    if (mounted) {
+      setState(() => _biometricEnabled = value);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(value
+              ? 'Kunci sidik jari diaktifkan! 🔒'
+              : 'Kunci sidik jari dinonaktifkan'),
+          backgroundColor: value ? AppTheme.income : AppTheme.textMuted,
+        ),
+      );
+    }
+  }
 
   String _getDisplayName() {
     final user = ref.read(authServiceProvider).currentUser;
@@ -382,6 +442,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (confirmed == true) {
       setState(() => _isLoading = true);
       try {
+        BiometricState.reset();
         await ref.read(authServiceProvider).signOut();
         if (mounted) context.go('/login');
       } catch (e) {
@@ -527,6 +588,74 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                   ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
                   const SizedBox(height: 28),
+
+                  // Section: Keamanan (only show if biometric is available)
+                  if (_biometricAvailable) ...[
+                    const Text(
+                      'KEAMANAN',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.textMuted,
+                        letterSpacing: 1.2,
+                      ),
+                    ).animate().fadeIn(delay: 350.ms),
+                    const SizedBox(height: 10),
+                    Container(
+                      decoration: AppTheme.glassCard(borderRadius: 20),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(9),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.income.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(Iconsax.finger_scan,
+                                    color: AppTheme.income, size: 20),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Kunci Sidik Jari',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppTheme.textPrimary,
+                                      ),
+                                    ),
+                                    Text(
+                                      _biometricEnabled
+                                          ? 'Aktif — App terkunci saat dibuka'
+                                          : 'Nonaktif',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppTheme.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Switch.adaptive(
+                                value: _biometricEnabled,
+                                onChanged: _toggleBiometric,
+                                activeColor: AppTheme.income,
+                                activeTrackColor: AppTheme.income.withOpacity(0.3),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ).animate().fadeIn(delay: 370.ms, duration: 400.ms),
+                    const SizedBox(height: 28),
+                  ],
 
                   // Section: Lainnya
                   const Text(

@@ -6,6 +6,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../presentation/auth/login_screen.dart';
 import '../../presentation/auth/register_screen.dart';
+import '../../presentation/auth/biometric_screen.dart';
 import '../../presentation/home/home_screen.dart';
 import '../../presentation/transaction/add_transaction_screen.dart';
 import '../../presentation/transaction/edit_transaction_screen.dart';
@@ -16,6 +17,18 @@ import '../../presentation/bill/bill_screen.dart';
 import '../../presentation/settings/settings_screen.dart';
 import '../theme/app_theme.dart';
 
+/// Tracks whether biometric has been verified this app session.
+/// Reset when the app is restarted or user logs out.
+class BiometricState {
+  static bool hasVerified = false;
+  static bool needsBiometric = false; // Set during app init
+
+  static void reset() {
+    hasVerified = false;
+    needsBiometric = false;
+  }
+}
+
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
@@ -24,9 +37,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isLoggedIn = session != null;
       final isAuthRoute = state.matchedLocation == '/login' ||
           state.matchedLocation == '/register';
+      final isBiometricRoute = state.matchedLocation == '/biometric';
 
       if (!isLoggedIn && !isAuthRoute) return '/login';
       if (isLoggedIn && isAuthRoute) return '/';
+
+      // Biometric check: if logged in, biometric enabled, and not yet verified
+      if (isLoggedIn &&
+          BiometricState.needsBiometric &&
+          !BiometricState.hasVerified &&
+          !isBiometricRoute &&
+          !isAuthRoute) {
+        return '/biometric';
+      }
+
       return null;
     },
     routes: [
@@ -42,6 +66,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/login', builder: (c, s) => const LoginScreen()),
       GoRoute(path: '/settings', builder: (c, s) => const SettingsScreen()),
       GoRoute(path: '/register', builder: (c, s) => const RegisterScreen()),
+      GoRoute(path: '/biometric', builder: (c, s) => const BiometricScreen()),
       GoRoute(
         path: '/add-transaction',
         builder: (c, s) => const AddTransactionScreen(),
@@ -55,6 +80,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
 
 class MainShell extends StatelessWidget {
   final Widget child;

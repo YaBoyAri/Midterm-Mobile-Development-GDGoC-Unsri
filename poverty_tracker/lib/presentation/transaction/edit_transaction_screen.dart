@@ -7,6 +7,7 @@ import 'package:iconsax/iconsax.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/transaction_model.dart';
 import '../../data/services/transaction_service.dart';
+import '../../data/services/notification_service.dart';
 
 class EditTransactionScreen extends ConsumerStatefulWidget {
   final TransactionModel transaction;
@@ -88,6 +89,12 @@ class _EditTransactionScreenState
       );
 
       await TransactionService().updateTransaction(updated);
+
+      // Check budget and send notification if expense
+      if (_type == 'expense') {
+        final month = DateFormat('yyyy-MM').format(_date);
+        await NotificationService().checkBudgetAndNotify(month: month);
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
