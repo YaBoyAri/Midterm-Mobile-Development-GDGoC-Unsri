@@ -51,6 +51,11 @@ dependencies:
 
   # Biometric Authentication
   local_auth: ^2.3.0
+
+  # AI/ML — Receipt Scanner (ON-DEVICE, bukan API)
+  google_mlkit_text_recognition: ^0.13.0
+  image_picker: ^1.1.2
+  camera: ^0.11.0+2
   
   # Date & Currency Format
   intl: ^0.19.0

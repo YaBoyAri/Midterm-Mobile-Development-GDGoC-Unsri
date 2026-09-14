@@ -10,7 +10,9 @@ import '../../presentation/auth/biometric_screen.dart';
 import '../../presentation/home/home_screen.dart';
 import '../../presentation/transaction/add_transaction_screen.dart';
 import '../../presentation/transaction/edit_transaction_screen.dart';
+import '../../presentation/scanner/receipt_camera_screen.dart';
 import '../../data/models/transaction_model.dart';
+import '../../data/models/receipt_data.dart';
 import '../../presentation/budget/budget_screen.dart';
 import '../../presentation/report/report_screen.dart';
 import '../../presentation/bill/bill_screen.dart';
@@ -69,7 +71,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/biometric', builder: (c, s) => const BiometricScreen()),
       GoRoute(
         path: '/add-transaction',
-        builder: (c, s) => const AddTransactionScreen(),
+        builder: (c, s) {
+          final extra = s.extra;
+          ReceiptData? receiptData;
+          if (extra is Map) {
+            receiptData = extra['receiptData'] as ReceiptData?;
+          }
+          return AddTransactionScreen(initialReceiptData: receiptData);
+        },
       ),
       GoRoute(
         path: '/edit-transaction',
@@ -108,12 +117,24 @@ class MainShell extends StatelessWidget {
             case 1:
               context.go('/budget');
               break;
-            case 2:
+            // index 2 = scan button (handled separately in navbar)
+            case 3:
               context.go('/report');
               break;
-            case 3:
+            case 4:
               context.go('/bill');
               break;
+          }
+        },
+        onScanTap: () async {
+          // Open custom camera screen and get ReceiptData back
+          final result = await Navigator.push<ReceiptData>(
+            context,
+            MaterialPageRoute(builder: (_) => const ReceiptCameraScreen()),
+          );
+          if (result != null && context.mounted) {
+            // Navigate to add-transaction with scanned data
+            context.push('/add-transaction', extra: {'receiptData': result});
           }
         },
       ),
@@ -124,17 +145,22 @@ class MainShell extends StatelessWidget {
 class _FloatingNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
+  final VoidCallback onScanTap;
 
   const _FloatingNavBar({
     required this.currentIndex,
     required this.onTap,
+    required this.onScanTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final items = [
+    final leftItems = [
       _NavItem(icon: Iconsax.home_2, activeIcon: Iconsax.home_25, label: 'Home'),
       _NavItem(icon: Iconsax.chart, activeIcon: Iconsax.chart_1, label: 'Budget'),
+    ];
+
+    final rightItems = [
       _NavItem(icon: Iconsax.graph, activeIcon: Iconsax.graph, label: 'Report'),
       _NavItem(icon: Iconsax.receipt_text, activeIcon: Iconsax.receipt_text, label: 'Bills'),
     ];
@@ -163,52 +189,95 @@ class _FloatingNavBar extends StatelessWidget {
               ],
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: items.asMap().entries.map((e) {
-                final isActive = e.key == currentIndex;
-                return GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => onTap(e.key),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeOutCubic,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: isActive
-                          ? AppTheme.primary.withOpacity(0.15)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isActive ? e.value.activeIcon : e.value.icon,
-                          color: isActive
-                              ? AppTheme.primaryLight
-                              : AppTheme.textSecondary,
-                          size: 22,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          e.value.label,
-                          style: TextStyle(
-                            color: isActive
-                                ? AppTheme.primaryLight
-                                : AppTheme.textSecondary,
-                            fontSize: 11,
-                            fontWeight:
-                                isActive ? FontWeight.w600 : FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                // Left items (Home, Budget)
+                ...leftItems.asMap().entries.map((e) =>
+                    _buildNavItem(e.value, e.key, e.key == currentIndex)),
+
+                // Center scan button
+                _buildScanButton(),
+
+                // Right items (Report, Bills) — indices 3 and 4
+                ...rightItems.asMap().entries.map((e) {
+                  final realIndex = e.key + 3; // 0→3 (Report), 1→4 (Bills)
+                  // currentIndex mapping: Report=2, Bills=3
+                  // But in the new layout: Report=index3, Bills=index4
+                  // Original currentIndex: 0=Home, 1=Budget, 2=Report, 3=Bills
+                  final isActive = (e.key == 0 && currentIndex == 2) ||
+                      (e.key == 1 && currentIndex == 3);
+                  return _buildNavItem(e.value, realIndex, isActive);
+                }),
+              ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(_NavItem item, int index, bool isActive) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => onTap(index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive
+              ? AppTheme.primary.withOpacity(0.15)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isActive ? item.activeIcon : item.icon,
+              color: isActive
+                  ? AppTheme.primaryLight
+                  : AppTheme.textSecondary,
+              size: 22,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              item.label,
+              style: TextStyle(
+                color: isActive
+                    ? AppTheme.primaryLight
+                    : AppTheme.textSecondary,
+                fontSize: 11,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScanButton() {
+    return GestureDetector(
+      onTap: onScanTap,
+      child: Container(
+        width: 52,
+        height: 52,
+        decoration: BoxDecoration(
+          gradient: AppTheme.primaryGradient,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primary.withOpacity(0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: const Icon(
+          Iconsax.scan_barcode,
+          color: Colors.white,
+          size: 24,
         ),
       ),
     );

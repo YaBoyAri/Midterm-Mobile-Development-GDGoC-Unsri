@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,11 +8,16 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:iconsax/iconsax.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/transaction_model.dart';
+import '../../data/models/receipt_data.dart';
 import '../../data/services/transaction_service.dart';
 import '../../data/services/notification_service.dart';
+import '../scanner/receipt_camera_screen.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
-  const AddTransactionScreen({super.key});
+  /// Pre-filled receipt data from the camera scanner (via navbar scan button).
+  final ReceiptData? initialReceiptData;
+
+  const AddTransactionScreen({super.key, this.initialReceiptData});
 
   @override
   ConsumerState<AddTransactionScreen> createState() =>
@@ -26,6 +32,11 @@ class _AddTransactionScreenState
   String _category = 'Makanan';
   DateTime _date = DateTime.now();
   bool _isLoading = false;
+
+  /// Whether the platform supports receipt scanning (mobile only)
+  bool get _canScan => !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
 
   final _incomeCategories = [
     'Gaji', 'Investasi', 'Bonus', 'Freelance', 'Lainnya'
@@ -44,6 +55,63 @@ class _AddTransactionScreenState
 
   List<String> get _categories =>
       _type == 'income' ? _incomeCategories : _expenseCategories;
+
+  @override
+  void initState() {
+    super.initState();
+    // Auto-apply receipt data if provided (from navbar scan flow)
+    if (widget.initialReceiptData != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _applyReceiptData(widget.initialReceiptData!);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  // ─── Scanner: Open Camera Screen ──────────────────────────────────
+
+  /// Opens the custom camera screen and applies result to form.
+  Future<void> _openScanner() async {
+    final result = await Navigator.push<ReceiptData>(
+      context,
+      MaterialPageRoute(builder: (_) => const ReceiptCameraScreen()),
+    );
+    if (result != null && mounted) {
+      _applyReceiptData(result);
+    }
+  }
+
+  /// Apply receipt scan data to form fields.
+  void _applyReceiptData(ReceiptData data) {
+    setState(() {
+      if (data.amount != null) {
+        _amountController.text = data.amount!.toInt().toString();
+      }
+      if (data.date != null) {
+        _date = data.date!;
+      }
+      if (data.merchantName != null) {
+        _noteController.text = data.merchantName!;
+      }
+      // Auto-set type to expense (receipts are usually expenses)
+      _type = 'expense';
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('✅ Data struk berhasil diterapkan! Review & edit jika perlu.'),
+        backgroundColor: AppTheme.income,
+      ),
+    );
+  }
+
+  // ─── Transaction Submit ───────────────────────────────────────────
 
   Future<void> _submit() async {
     if (_amountController.text.isEmpty) {
@@ -106,6 +174,88 @@ class _AddTransactionScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ─── Scan Receipt Button ────────────────────────────
+            if (_canScan) ...[
+              GestureDetector(
+                onTap: _openScanner,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppTheme.primary.withOpacity(0.15),
+                        const Color(0xFF7C3AED).withOpacity(0.10),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: AppTheme.primary.withOpacity(0.3),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          gradient: AppTheme.primaryGradient,
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.primary.withOpacity(0.4),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Iconsax.scan_barcode,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '📸 Scan Struk',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Buka kamera untuk scan struk belanja',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.textSecondary.withOpacity(0.8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Iconsax.arrow_right_3,
+                        color: AppTheme.primaryLight,
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                ),
+              )
+                  .animate()
+                  .fadeIn(duration: 300.ms)
+                  .slideY(begin: -0.1, duration: 300.ms),
+              const SizedBox(height: 20),
+            ],
+
             // Type Toggle
             Container(
               padding: const EdgeInsets.all(4),
@@ -134,8 +284,7 @@ class _AddTransactionScreenState
                           boxShadow: _type == 'expense'
                               ? [
                                   BoxShadow(
-                                    color: AppTheme.expense
-                                        .withOpacity(0.3),
+                                    color: AppTheme.expense.withOpacity(0.3),
                                     blurRadius: 8,
                                     offset: const Offset(0, 2),
                                   ),
@@ -185,8 +334,7 @@ class _AddTransactionScreenState
                           boxShadow: _type == 'income'
                               ? [
                                   BoxShadow(
-                                    color: AppTheme.income
-                                        .withOpacity(0.3),
+                                    color: AppTheme.income.withOpacity(0.3),
                                     blurRadius: 8,
                                     offset: const Offset(0, 2),
                                   ),
@@ -283,8 +431,7 @@ class _AddTransactionScreenState
                             boxShadow: _category == cat
                                 ? [
                                     BoxShadow(
-                                      color: AppTheme.primary
-                                          .withOpacity(0.3),
+                                      color: AppTheme.primary.withOpacity(0.3),
                                       blurRadius: 8,
                                       offset: const Offset(0, 2),
                                     ),
