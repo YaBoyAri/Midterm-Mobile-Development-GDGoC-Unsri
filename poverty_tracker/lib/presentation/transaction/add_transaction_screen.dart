@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -91,12 +92,19 @@ class _AddTransactionScreenState
   void _applyReceiptData(ReceiptData data) {
     setState(() {
       if (data.amount != null) {
-        _amountController.text = data.amount!.toInt().toString();
+        // Format scanned amount with thousand separators
+        final intAmount = data.amount!.toInt();
+        _amountController.text = intAmount.toString().replaceAllMapped(
+          RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+          (m) => '${m[1]}.',
+        );
       }
       if (data.date != null) {
         _date = data.date!;
       }
-      if (data.merchantName != null) {
+      if (data.note != null) {
+        _noteController.text = data.note!;
+      } else if (data.merchantName != null) {
         _noteController.text = data.merchantName!;
       }
       // Auto-set type to expense (receipts are usually expenses)
@@ -121,6 +129,35 @@ class _AddTransactionScreenState
       return;
     }
 
+    // Parse amount — strip dots first
+    final rawAmount = _amountController.text.replaceAll('.', '');
+    final parsedAmount = double.tryParse(rawAmount);
+
+    if (parsedAmount == null || parsedAmount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Nominal tidak valid, masukkan angka yang benar'),
+          backgroundColor: AppTheme.expense,
+        ),
+      );
+      return;
+    }
+
+    // Limit: max 100 juta (999,999,999)
+    if (parsedAmount > 999999999) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '⚠️ Nominal terlalu besar (maks. Rp 100.000.000). '
+            'Cek kembali angka yang dimasukkan.',
+          ),
+          backgroundColor: AppTheme.expense,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
@@ -128,7 +165,7 @@ class _AddTransactionScreenState
         id: '',
         userId: Supabase.instance.client.auth.currentUser!.id,
         type: _type,
-        amount: double.parse(_amountController.text.replaceAll('.', '')),
+        amount: parsedAmount,
         category: _category,
         note: _noteController.text,
         date: _date,
@@ -381,6 +418,7 @@ class _AddTransactionScreenState
             TextFormField(
               controller: _amountController,
               keyboardType: TextInputType.number,
+              inputFormatters: [_ThousandsSeparatorFormatter()],
               style: const TextStyle(
                 color: AppTheme.textPrimary,
                 fontSize: 24,
@@ -389,6 +427,11 @@ class _AddTransactionScreenState
               decoration: const InputDecoration(
                 prefixText: 'Rp ',
                 hintText: '0',
+                helperText: 'Maks. Rp 100.000.000',
+                helperStyle: TextStyle(
+                  color: AppTheme.textMuted,
+                  fontSize: 11,
+                ),
                 prefixStyle: TextStyle(
                   color: AppTheme.textSecondary,
                   fontSize: 24,
@@ -571,6 +614,33 @@ class _AddTransactionScreenState
           ],
         ),
       ),
+    );
+  }
+}
+// --- Thousands Separator Input Formatter --------------------------------------
+/// Formats the amount field with Indonesian-style dot thousand separators
+/// while the user types. e.g. "38000" ? "38.000", "1500000" ? "1.500.000".
+class _ThousandsSeparatorFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    // Strip everything except digits
+    final digits = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
+    if (digits.isEmpty) {
+      return newValue.copyWith(text: '');
+    }
+
+    // Format with dots every 3 digits from the right
+    final formatted = digits.replaceAllMapped(
+      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]}.',
+    );
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }

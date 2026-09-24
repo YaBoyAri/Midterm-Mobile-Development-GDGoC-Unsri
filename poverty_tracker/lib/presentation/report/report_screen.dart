@@ -188,14 +188,16 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
               .fold(0.0, (sum, t) => sum + t.amount);
           final totalDifference = totalIncome - totalExpense;
 
-          final expenseByCategory = <String, double>{};
-          for (final t in thisMonth.where((t) => t.type == 'expense')) {
-            expenseByCategory[t.category] =
-                (expenseByCategory[t.category] ?? 0) + t.amount;
+          final currentType = _selectedFilter;
+          final categoryData = <String, double>{};
+          for (final t in thisMonth.where((t) => t.type == currentType)) {
+            categoryData[t.category] =
+                (categoryData[t.category] ?? 0) + t.amount;
           }
 
-          final weeklyExpense = _getWeeklyData(thisMonth, 'expense');
-          final weeklyIncome = _getWeeklyData(thisMonth, 'income');
+          final weeklyData = _getWeeklyData(thisMonth, currentType);
+          final currentTotal = currentType == 'income' ? totalIncome : totalExpense;
+          final currentLabel = currentType == 'income' ? 'Pemasukan' : 'Pengeluaran';
 
           return SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
@@ -840,10 +842,10 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                     .slideY(begin: 0.1, curve: Curves.easeOut),
                 const SizedBox(height: 24),
 
-                // Bar Chart Mingguan (Pengeluaran only — existing)
-                const Text(
-                  'Pengeluaran Mingguan',
-                  style: TextStyle(
+                // Bar Chart Mingguan
+                Text(
+                  '$currentLabel Mingguan',
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.textPrimary,
@@ -854,7 +856,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                   padding: const EdgeInsets.all(20),
                   decoration: AppTheme.glassCard(borderRadius: 20),
                   height: 220,
-                  child: weeklyExpense.every((v) => v == 0)
+                  child: weeklyData.every((v) => v == 0)
                       ? const Center(
                           child: Text('Belum ada data',
                               style:
@@ -862,7 +864,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                       : BarChart(
                           BarChartData(
                             alignment: BarChartAlignment.spaceAround,
-                            maxY: weeklyExpense.reduce(
+                            maxY: weeklyData.reduce(
                                     (a, b) => a > b ? a : b) *
                                 1.3,
                             barTouchData:
@@ -907,7 +909,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                                 x: i,
                                 barRods: [
                                   BarChartRodData(
-                                    toY: weeklyExpense[i],
+                                    toY: weeklyData[i],
                                     gradient: AppTheme.primaryGradient,
                                     width: 28,
                                     borderRadius:
@@ -915,7 +917,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                                     backDrawRodData:
                                         BackgroundBarChartRodData(
                                       show: true,
-                                      toY: weeklyExpense.reduce(
+                                      toY: weeklyData.reduce(
                                               (a, b) =>
                                                   a > b ? a : b) *
                                           1.3,
@@ -935,10 +937,10 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                 const SizedBox(height: 24),
 
                 // Pie Chart Kategori
-                if (expenseByCategory.isNotEmpty) ...[
-                  const Text(
-                    'Pengeluaran per Kategori',
-                    style: TextStyle(
+                if (categoryData.isNotEmpty) ...[
+                  Text(
+                    '$currentLabel per Kategori',
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: AppTheme.textPrimary,
@@ -955,7 +957,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                           child: PieChart(
                             PieChartData(
                               sections: _getPieSections(
-                                  expenseByCategory, totalExpense),
+                                  categoryData, currentTotal),
                               centerSpaceRadius: 45,
                               sectionsSpace: 3,
                             ),
@@ -963,13 +965,13 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                         ),
                         const SizedBox(height: 20),
                         // Legend
-                        ...expenseByCategory.entries
+                        ...categoryData.entries
                             .toList()
                             .asMap()
                             .entries
                             .map((e) {
                           final percentage =
-                              (e.value.value / totalExpense * 100);
+                              (e.value.value / currentTotal * 100);
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 8),
                             child: Row(

@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:iconsax/iconsax.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/repositories/auth_provider.dart';
 import '../../data/repositories/transaction_provider.dart';
+import '../../data/repositories/budget_provider.dart';
 import '../../data/models/transaction_model.dart';
 import '../../data/services/notification_service.dart';
 import '../../data/services/bill_service.dart';
@@ -429,7 +431,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             .animate()
                             .fadeIn(delay: 200.ms, duration: 500.ms)
                             .slideY(begin: 0.15, curve: Curves.easeOut),
-                        const SizedBox(height: 28),
+                        const SizedBox(height: 20),
+
+                        // ── Spending Insight Card (month-over-month) ──
+                        _buildSpendingInsight(
+                          transactions, totalExpense, formatter),
+                        const SizedBox(height: 16),
+
+                        // ── Weekly Spending Trend (mini chart) ──
+                        _buildWeeklyTrend(thisMonth),
+                        const SizedBox(height: 16),
+
+                        // ── Top Categories ──
+                        _buildTopCategories(
+                          thisMonth, totalExpense, formatter),
+                        const SizedBox(height: 16),
+
+                        // ── Budget Alert Banner ──
+                        _buildBudgetAlerts(ref, formatter),
+                        const SizedBox(height: 24),
 
                         // Quick Actions
                         Row(
@@ -742,6 +762,563 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           duration: 1200.ms,
           color: AppTheme.surfaceLight.withOpacity(0.3),
         );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  NEW INSIGHT SECTIONS
+  // ═══════════════════════════════════════════════════════════════════
+
+  /// Spending Insight Card — compares this month's expense to last month
+  Widget _buildSpendingInsight(
+    List<TransactionModel> allTransactions,
+    double currentExpense,
+    NumberFormat formatter,
+  ) {
+    final prevMonth = DateTime(_selectedMonth.year, _selectedMonth.month - 1);
+    final prevExpense = allTransactions
+        .where((t) =>
+            t.type == 'expense' &&
+            t.date.month == prevMonth.month &&
+            t.date.year == prevMonth.year)
+        .fold(0.0, (sum, t) => sum + t.amount);
+
+    // Calculate percentage change
+    double pctChange = 0;
+    bool isDown = true;
+    if (prevExpense > 0) {
+      pctChange = ((currentExpense - prevExpense) / prevExpense * 100).abs();
+      isDown = currentExpense <= prevExpense;
+    } else if (currentExpense > 0) {
+      pctChange = 100;
+      isDown = false;
+    }
+
+    final prevMonthName = DateFormat('MMMM', 'id_ID').format(prevMonth);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: AppTheme.glassCardColored(
+        color: isDown ? AppTheme.income : AppTheme.expense,
+        borderRadius: 20,
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: (isDown ? AppTheme.income : AppTheme.expense)
+                  .withOpacity(0.15),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              isDown ? Iconsax.trend_down : Iconsax.trend_up,
+              color: isDown ? AppTheme.income : AppTheme.expense,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Insight Pengeluaran',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: (isDown ? AppTheme.income : AppTheme.expense)
+                        .withOpacity(0.8),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                RichText(
+                  text: TextSpan(
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppTheme.textPrimary,
+                      height: 1.4,
+                    ),
+                    children: prevExpense == 0 && currentExpense == 0
+                        ? [
+                            const TextSpan(
+                                text: 'Belum ada data pengeluaran bulan ini dan bulan lalu')
+                          ]
+                        : [
+                            TextSpan(
+                              text: '${pctChange.toStringAsFixed(0)}% ',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 16,
+                                color: isDown
+                                    ? AppTheme.income
+                                    : AppTheme.expense,
+                              ),
+                            ),
+                            TextSpan(
+                              text: isDown
+                                  ? 'lebih hemat '
+                                  : 'lebih banyak ',
+                            ),
+                            TextSpan(
+                              text: 'dari $prevMonthName',
+                              style: const TextStyle(
+                                  color: AppTheme.textSecondary),
+                            ),
+                          ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    )
+        .animate()
+        .fadeIn(delay: 250.ms, duration: 500.ms)
+        .slideY(begin: 0.1, curve: Curves.easeOut);
+  }
+
+  /// Weekly Spending Trend — mini sparkline chart for daily expenses
+  Widget _buildWeeklyTrend(List<TransactionModel> thisMonth) {
+    // Group expenses by day
+    final expenses = thisMonth.where((t) => t.type == 'expense').toList();
+    final daysInMonth =
+        DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0).day;
+
+    // Build daily totals
+    final dailyTotals = List<double>.filled(daysInMonth, 0);
+    for (final t in expenses) {
+      final dayIndex = t.date.day - 1;
+      if (dayIndex >= 0 && dayIndex < daysInMonth) {
+        dailyTotals[dayIndex] += t.amount;
+      }
+    }
+
+    // Determine which days to show (up to today if current month)
+    final now = DateTime.now();
+    int showDays = daysInMonth;
+    if (_selectedMonth.year == now.year && _selectedMonth.month == now.month) {
+      showDays = now.day;
+    }
+
+    final visibleTotals = dailyTotals.sublist(0, showDays);
+    final maxVal = visibleTotals.isEmpty
+        ? 1.0
+        : visibleTotals.reduce((a, b) => a > b ? a : b);
+
+    final spots = visibleTotals
+        .asMap()
+        .entries
+        .map((e) => FlSpot(e.key.toDouble(), e.value))
+        .toList();
+
+    if (spots.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: AppTheme.glassCard(borderRadius: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Iconsax.chart_2,
+                    size: 14, color: AppTheme.primaryLight),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Tren Pengeluaran Harian',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 100,
+            child: LineChart(
+              LineChartData(
+                gridData: const FlGridData(show: false),
+                titlesData: const FlTitlesData(show: false),
+                borderData: FlBorderData(show: false),
+                minY: 0,
+                maxY: maxVal * 1.2,
+                lineTouchData: LineTouchData(
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipItems: (spots) => spots.map((s) {
+                      final day = s.x.toInt() + 1;
+                      final formatter = NumberFormat.compact(locale: 'id_ID');
+                      return LineTooltipItem(
+                        'Hari $day\nRp ${formatter.format(s.y)}',
+                        const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: spots,
+                    isCurved: true,
+                    curveSmoothness: 0.3,
+                    color: AppTheme.primaryLight,
+                    barWidth: 2.5,
+                    isStrokeCapRound: true,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, pct, bar, idx) {
+                        // Only show dot on max day
+                        final isMax = spot.y == maxVal && maxVal > 0;
+                        return FlDotCirclePainter(
+                          radius: isMax ? 4 : 0,
+                          color: AppTheme.expense,
+                          strokeWidth: 2,
+                          strokeColor: Colors.white,
+                        );
+                      },
+                    ),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      gradient: LinearGradient(
+                        colors: [
+                          AppTheme.primaryLight.withOpacity(0.25),
+                          AppTheme.primaryLight.withOpacity(0.0),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '1',
+                style: TextStyle(
+                    fontSize: 10, color: AppTheme.textMuted.withOpacity(0.6)),
+              ),
+              Text(
+                '${(showDays / 2).round()}',
+                style: TextStyle(
+                    fontSize: 10, color: AppTheme.textMuted.withOpacity(0.6)),
+              ),
+              Text(
+                '$showDays',
+                style: TextStyle(
+                    fontSize: 10, color: AppTheme.textMuted.withOpacity(0.6)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    )
+        .animate()
+        .fadeIn(delay: 350.ms, duration: 500.ms)
+        .slideY(begin: 0.1, curve: Curves.easeOut);
+  }
+
+  /// Top Categories — shows top 3 expense categories with progress bars
+  Widget _buildTopCategories(
+    List<TransactionModel> thisMonth,
+    double totalExpense,
+    NumberFormat formatter,
+  ) {
+    final expenses = thisMonth.where((t) => t.type == 'expense').toList();
+    if (expenses.isEmpty) return const SizedBox.shrink();
+
+    // Group by category
+    final Map<String, double> categoryTotals = {};
+    for (final t in expenses) {
+      categoryTotals[t.category] =
+          (categoryTotals[t.category] ?? 0) + t.amount;
+    }
+
+    // Sort descending and take top 3
+    final sorted = categoryTotals.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final top = sorted.take(3).toList();
+
+    final categoryColors = [
+      AppTheme.expense,
+      AppTheme.warning,
+      AppTheme.primaryLight,
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: AppTheme.glassCard(borderRadius: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppTheme.expense.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Iconsax.chart_1,
+                    size: 14, color: AppTheme.expense),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Kategori Pengeluaran Terbesar',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...top.asMap().entries.map((entry) {
+            final index = entry.key;
+            final cat = entry.value;
+            final pct = totalExpense > 0 ? cat.value / totalExpense : 0.0;
+            final color = categoryColors[index % categoryColors.length];
+
+            return Padding(
+              padding: EdgeInsets.only(bottom: index < top.length - 1 ? 14 : 0),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          _getCategoryIconStatic(cat.key),
+                          size: 14,
+                          color: color,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          cat.key,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '${(pct * 100).toStringAsFixed(0)}%',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: color,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        formatter.format(cat.value),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: pct,
+                      minHeight: 6,
+                      backgroundColor: color.withOpacity(0.1),
+                      valueColor: AlwaysStoppedAnimation<Color>(color),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    )
+        .animate()
+        .fadeIn(delay: 450.ms, duration: 500.ms)
+        .slideY(begin: 0.1, curve: Curves.easeOut);
+  }
+
+  /// Budget Alert Banner — shows when any budget is near or over limit
+  Widget _buildBudgetAlerts(WidgetRef ref, NumberFormat formatter) {
+    final budgetsAsync = ref.watch(budgetsProvider);
+    final spendingAsync = ref.watch(spendingByCategoryProvider);
+
+    return budgetsAsync.when(
+      data: (budgets) => spendingAsync.when(
+        data: (spending) {
+          // Find budgets that are >= 80% used
+          final alerts = <Map<String, dynamic>>[];
+          for (final budget in budgets) {
+            final spent = spending[budget.category] ?? 0;
+            final progress = budget.limitAmount > 0
+                ? spent / budget.limitAmount
+                : 0.0;
+            if (progress >= 0.8) {
+              alerts.add({
+                'category': budget.category,
+                'spent': spent,
+                'limit': budget.limitAmount,
+                'progress': progress,
+                'isOver': progress >= 1.0,
+              });
+            }
+          }
+
+          if (alerts.isEmpty) return const SizedBox.shrink();
+
+          // Sort: over-limit first, then by progress descending
+          alerts.sort((a, b) {
+            if (a['isOver'] != b['isOver']) {
+              return a['isOver'] ? -1 : 1;
+            }
+            return (b['progress'] as double)
+                .compareTo(a['progress'] as double);
+          });
+
+          return Column(
+            children: alerts.map((alert) {
+              final isOver = alert['isOver'] as bool;
+              final progress =
+                  (alert['progress'] as double).clamp(0.0, 1.0);
+              final color = isOver ? AppTheme.expense : AppTheme.warning;
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: AppTheme.glassCardColored(
+                    color: color,
+                    borderRadius: 16,
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          isOver
+                              ? Iconsax.danger
+                              : Iconsax.warning_2,
+                          color: color,
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isOver
+                                  ? 'Budget ${alert['category']} melebihi limit!'
+                                  : 'Budget ${alert['category']} hampir habis',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: color,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${formatter.format(alert['spent'])} / ${formatter.format(alert['limit'])}',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppTheme.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(3),
+                              child: LinearProgressIndicator(
+                                value: progress,
+                                minHeight: 4,
+                                backgroundColor:
+                                    color.withOpacity(0.1),
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(color),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+                    .animate()
+                    .fadeIn(delay: 550.ms, duration: 400.ms)
+                    .slideX(begin: 0.05, curve: Curves.easeOut),
+              );
+            }).toList(),
+          );
+        },
+        loading: () => const SizedBox.shrink(),
+        error: (_, __) => const SizedBox.shrink(),
+      ),
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  /// Helper to get category icon (static version for use outside _TransactionItem)
+  IconData _getCategoryIconStatic(String category) {
+    switch (category.toLowerCase()) {
+      case 'makanan':
+        return Iconsax.coffee;
+      case 'transportasi':
+        return Iconsax.car;
+      case 'belanja':
+        return Iconsax.bag_2;
+      case 'hiburan':
+        return Iconsax.game;
+      case 'kesehatan':
+        return Iconsax.health;
+      case 'gaji':
+        return Iconsax.briefcase;
+      case 'investasi':
+        return Iconsax.chart_2;
+      case 'tagihan':
+        return Iconsax.receipt_text;
+      default:
+        return Iconsax.money;
+    }
   }
 }
 

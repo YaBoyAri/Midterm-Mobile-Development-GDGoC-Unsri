@@ -475,8 +475,6 @@ class BudgetScreen extends ConsumerWidget {
       'Makanan', 'Transportasi', 'Belanja',
       'Hiburan', 'Kesehatan', 'Tagihan', 'Lainnya'
     ];
-    final formatter = NumberFormat.currency(
-        locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
 
     showModalBottomSheet(
       context: context,
